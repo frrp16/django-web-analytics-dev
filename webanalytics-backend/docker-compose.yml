@@ -1,0 +1,20 @@
+version: '3.1'
+
+services:
+  web:
+    build: .    
+    command: ["python", "backend/manage.py", "runserver", "0.0.0.0:8000"]
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - django-postgres
+    environment:
+    - DATABASE_NAME=webanalytics_dev
+    - DATABASE_USER=django_webanalytics_dev
+    - DATABASE_PASSWORD=django098
+    - DATABASE_HOST=django-postgres
+    - DATABASE_PORT=5432
+    - SECRET_KEY=django-insecure-vxj2#_qaf8ed7(qwb&*_@a$q(+7-%ft$p+cir_dir$snr-!g5p  
+    
