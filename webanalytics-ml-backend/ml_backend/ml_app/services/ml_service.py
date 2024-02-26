@@ -55,11 +55,7 @@ class MultilayerPerceptron(BaseModel):
 
     def build_and_compile_model(self):
         try:
-            model = models.Sequential(name=self.name)
-            # model.add(layers.Dense(100, input_dim=1, activation='relu'))
-            # model.add(layers.Dense(100, activation='relu'))
-            # model.add(layers.Dense(1, activation='linear'))     
-                   
+            model = models.Sequential(name=self.name)                            
             if self.hidden_layers:
                 model.add(layers.Dense(self.hidden_layers[0], input_dim=len(self.features), activation='relu'))
                 for units in self.hidden_layers[1:]: 
@@ -74,6 +70,23 @@ class MultilayerPerceptron(BaseModel):
         except Exception as e:
             raise Exception(e)
         
+class LinearRegression(BaseModel):
+    def __init__(self, name: str, features: list, hidden_layers: list, target : list,  task : str, dataset_id: str):
+        self.algorithm = "Linear Regression"
+        super().__init__(name, features, hidden_layers, target, task, dataset_id)
+        self.model = self.build_and_compile_model()
+
+    def build_and_compile_model(self):
+        try:
+            model = models.Sequential(name=self.name)
+            model.add(layers.Dense(1, input_dim=len(self.features), activation='linear'))
+            model.compile(loss='mse', optimizer='adam', metrics=['mse'])
+            return model
+        except Exception as e:
+            raise Exception(e)
+        
+
+
 
 # def mlp_model():
 #     model = models.Sequential()

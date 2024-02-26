@@ -34,8 +34,7 @@ class MLModelViewSet(viewsets.ViewSet):
     
     @action(detail=False, methods=['POST'], url_path='train')
     def train_model(self, request):        
-        try:
-            access_token = request.headers.get('Authorization').split(' ')[1]
+        try:            
             connection_id = request.data.get('connection_id')
             dataset_id = request.data.get('dataset_id')
             features = request.data.get('features')
@@ -44,13 +43,13 @@ class MLModelViewSet(viewsets.ViewSet):
             task = request.data.get('task')
             hidden_layers = request.data.get('hidden_layers')
             epochs = request.data.get('epochs')
-            batch_size = request.data.get('batch_size')            
+            batch_size = request.data.get('batch_size') 
 
             if not all([connection_id, dataset_id]):
                 return Response("Invalid data", status=status.HTTP_400_BAD_REQUEST)
                         
             # Get dataset data
-            data_json = get_dataset_data(connection_id, dataset_id, access_token)
+            data_json = get_dataset_data(connection_id, dataset_id)
             
             # print(type(features))
             # print(type(target))
@@ -86,14 +85,13 @@ class MLModelViewSet(viewsets.ViewSet):
                 hidden_layers=hidden_layers,
                 dataset_id=dataset_id,
                 epochs=epochs,
-                batch_size=batch_size,
-                access_token=access_token
+                batch_size=batch_size,                
             )
             # update training status
-            update_training_status(dataset_id, 'TRAINING', access_token)
+            update_training_status(dataset_id, 'TRAINING')
             return Response("Training started", status=status.HTTP_200_OK)
         except Exception as e:
-            update_training_status(dataset_id, 'UNTRAINED', access_token)
+            update_training_status(dataset_id, 'UNTRAINED')
             return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
     
     # def create(self, request):

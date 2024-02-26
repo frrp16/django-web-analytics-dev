@@ -11,17 +11,18 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
-
 from datetime import timedelta
+import os
+from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
+load_dotenv()
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-cyot)5ogye2&%mx(#q7m2+gy$g$_#=+wt*#v7h!n#o3*q+gr@4'
+SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -29,11 +30,8 @@ DEBUG = True
 BACKEND_HOST = '127.0.0.1:8000'
 
 ALLOWED_HOSTS = [
-    '127.0.0.1',
+    '127.0.0.1','0.0.0.0'
 ]
-
-
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -85,8 +83,22 @@ ASGI_APPLICATION = 'ml_server.asgi.app'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+# Database for production
 DATABASES = {
     'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DATABASE_NAME'),
+        'USER': os.environ.get('DATABASE_USER'),
+        'PASSWORD': os.environ.get('DATABASE_PASSWORD'),
+        'HOST': os.environ.get('DATABASE_HOST'), # For local development, use 'localhost' or '127.0.0.1'
+        'PORT': os.environ.get('DATABASE_PORT'), # Default PostgreSQL port is usually '5432' 
+    }
+}
+
+# DATABASES For Development
+DATABASES = {
+    'default': {
+        # Use sqlite3 for local development
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
