@@ -4,6 +4,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.authentication import BasicAuthentication
 from rest_framework_simplejwt.tokens import AccessToken
 from ..models import DatabaseConnection
 from ..serializers import DatabaseConnectionSerializer
@@ -11,8 +12,8 @@ from ..services import user_service
 
 
 class DatabaseConnectionViewSet(viewsets.ViewSet):
-    permission_classes = [permissions.IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
+    ppermission_classes = [permissions.IsAuthenticated | permissions.IsAdminUser]    
+    authentication_classes = [JWTAuthentication, BasicAuthentication]
     serializer_class = DatabaseConnectionSerializer
 
     def list(self, request):
@@ -45,8 +46,6 @@ class DatabaseConnectionViewSet(viewsets.ViewSet):
         except Exception as e:
             return Response(str(e), status=400)
         
-
-
         user_instance = User.objects.get(id=user_id)
         db_instance = DatabaseConnection(
             user=user_instance, database_type=database_type, host=host, port=port, database=database, 
@@ -64,11 +63,13 @@ class DatabaseConnectionViewSet(viewsets.ViewSet):
         
     @action(detail=True, methods=['GET'], url_path='url')
     def get_connection_url(self, request, pk=None):
-        try:            
-            user = user_service.get_user_from_token(request.headers.get('Authorization').split()[1])
-            db_instance = DatabaseConnection.objects.get(id=pk)
-            url = db_instance.get_connection_url()
-            return Response(url, status=200)
+        try:
+            if request.user.is_staff:
+                db_instance = DatabaseConnection.objects.get(id=pk)
+                url = db_instance.get_connection_url()
+                return Response(url, status=200)
+            else:
+                return Response("Unauthorized", status=401)
         except Exception as e:
             return Response(str(e), status=400)
 

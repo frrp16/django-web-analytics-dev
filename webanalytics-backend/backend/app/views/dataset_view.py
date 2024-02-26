@@ -5,6 +5,7 @@ from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.authentication import BasicAuthentication
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework.pagination import PageNumberPagination
 
@@ -22,18 +23,31 @@ import math
 # redis_instance = redis.StrictRedis(host='127.0.0.1', port=6379, db=1)
 
 class DatasetViewSet(viewsets.ViewSet):
-    permission_classes = [permissions.IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
+    permission_classes = [permissions.IsAuthenticated | permissions.IsAdminUser]    
+    authentication_classes = [JWTAuthentication, BasicAuthentication]
     serializer_class = CreateDatasetSerializer
     pagination_class = PageNumberPagination
     
-    def list(self, request):
-        user = user_service.get_user_from_token(request.headers.get('Authorization').split()[1])
-        queryset = Dataset.objects.filter(user=user.id)
-        serializer = DatasetSerializer(queryset, many=True)
-        return Response(serializer.data)
+    def list(self, request):   
+        try:     
+            # Check if user is authenticated as admin user
+            if request.user.is_staff:
+                queryset = Dataset.objects.all()
+                serializer = DatasetSerializer(queryset, many=True)
+                return Response(serializer.data)   
+                             
+            user = user_service.get_user_from_token(request.headers.get('Authorization').split()[1])
+            queryset = Dataset.objects.filter(user=user.id)
+            serializer = DatasetSerializer(queryset, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR) 
     
     def retrieve(self, request, pk=None):    
+        if request.user.is_staff:
+            queryset = Dataset.objects.get(id=pk)            
+            serializer = DatasetSerializer(queryset)
+            return Response(serializer.data)
         user = user_service.get_user_from_token(request.headers.get('Authorization').split()[1])  
         queryset = Dataset.objects.filter(user=user.id)
         dataset = queryset.get(id=pk)
@@ -42,13 +56,23 @@ class DatasetViewSet(viewsets.ViewSet):
     
     # # Create partial update method
     def partial_update(self, request, pk=None):
-        user = user_service.get_user_from_token(request.headers.get('Authorization').split()[1])
-        dataset = Dataset.objects.filter(user=user.id).get(id=pk)         
-        serializer = DatasetSerializer(dataset, data=request.data, partial=True)        
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            if request.user.is_staff:
+                dataset = Dataset.objects.get(id=pk)         
+                serializer = DatasetSerializer(dataset, data=request.data, partial=True)        
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                user = user_service.get_user_from_token(request.headers.get('Authorization').split()[1])
+                dataset = Dataset.objects.filter(user=user.id).get(id=pk)
+                serializer = DatasetSerializer(dataset, data=request.data, partial=True)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(serializer.data, status=status.HTTP_200_OK)            
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def create(self, request):
         name = request.data.get('name')
