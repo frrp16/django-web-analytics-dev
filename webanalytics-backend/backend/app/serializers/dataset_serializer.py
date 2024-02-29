@@ -1,15 +1,8 @@
 from rest_framework import serializers
-from ..models import Dataset, DatasetMonitorLog
+from ..models import Dataset
 
-
-class DatasetMonitorLogSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = DatasetMonitorLog
-        fields = '__all__'
-        extra_kwargs = {'dataset': {'write_only': True}}
         
-class DatasetSerializer(serializers.ModelSerializer):
-    monitor_logs = DatasetMonitorLogSerializer(many=True, read_only=True)
+class DatasetSerializer(serializers.ModelSerializer):    
     class Meta:
         model = Dataset
         fields = '__all__'

@@ -13,11 +13,11 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 import os
-from dotenv import load_dotenv
+import dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-load_dotenv()
+dotenv.load_dotenv()
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
@@ -87,22 +87,22 @@ ASGI_APPLICATION = 'ml_server.asgi.app'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DATABASE_NAME'),
-        'USER': os.environ.get('DATABASE_USER'),
-        'PASSWORD': os.environ.get('DATABASE_PASSWORD'),
-        'HOST': os.environ.get('DATABASE_HOST'), # For local development, use 'localhost' or '127.0.0.1'
-        'PORT': os.environ.get('DATABASE_PORT'), # Default PostgreSQL port is usually '5432' 
+        'NAME': 'webanalytics_model_dev',
+        'USER': 'django_webanalytics_dev',
+        'PASSWORD': 'django098',
+        'HOST': '127.0.0.1', # For local development, use 'localhost' or '127.0.0.1'
+        'PORT': 5432, # Default PostgreSQL port is usually '5432' 
     }
 }
 
 # DATABASES For Development
-DATABASES = {
-    'default': {
-        # Use sqlite3 for local development
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+# DATABASES = {
+#     'default': {
+#         # Use sqlite3 for local development
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 
 
 # Password validation
@@ -156,9 +156,9 @@ CELERY_BROKER_URL = 'redis://127.0.0.1:6379/2'
 CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/2'
 
 
-# CELERY_BEAT_SCHEDULE = {
-#     'monitor_dataset' :{
-#         'task': 'app.tasks.monitor_dataset',
-#         'schedule': timedelta(seconds=20)
-#     },
-# }
+CELERY_BEAT_SCHEDULE = {
+    'monitor_dataset' :{
+        'task': 'ml_app.tasks.monitorlog_task.monitor_dataset',
+        'schedule': timedelta(seconds=20)
+    },
+}

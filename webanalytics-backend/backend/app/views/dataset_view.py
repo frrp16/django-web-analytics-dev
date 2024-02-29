@@ -12,9 +12,11 @@ from rest_framework.pagination import PageNumberPagination
 
 from ..pagination import CustomPagination
 
-from ..models import Dataset, DatabaseConnection, DatasetMonitorLog
+from ..models import Dataset, DatabaseConnection
 from ..serializers import DatasetSerializer, CreateDatasetSerializer
 from ..services import user_service
+
+from ..api import get_dataset_monitorlog, create_monitorlog
 
 
 import pandas as pd
@@ -39,6 +41,13 @@ class DatasetViewSet(viewsets.ViewSet):
             user = user_service.get_user_from_token(request.headers.get('Authorization').split()[1])
             queryset = Dataset.objects.filter(user=user.id)
             serializer = DatasetSerializer(queryset, many=True)
+            # get dataset monitor log for each dataset
+            for dataset in serializer.data:
+                print('Dataset:', dataset)
+                monitor_log = get_dataset_monitorlog(dataset['id'])
+                # Add monitor log to serializer data
+                dataset['monitor_log'] = monitor_log
+
             return Response(serializer.data)
         except Exception as e:
             return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR) 
@@ -52,6 +61,10 @@ class DatasetViewSet(viewsets.ViewSet):
         queryset = Dataset.objects.filter(user=user.id)
         dataset = queryset.get(id=pk)
         serializer = DatasetSerializer(dataset)
+        # get dataset monitor log
+        monitor_log = get_dataset_monitorlog(dataset.id)
+        # Add monitor log to serializer data
+        serializer.data['monitor_log'] = monitor_log
         return Response(serializer.data)
     
     # # Create partial update method
@@ -110,15 +123,16 @@ class DatasetViewSet(viewsets.ViewSet):
                 name=name, description=description, table_name=table_name, 
                 user=User.objects.get(id=user_id), connection=db_connection,
             )
-            dataset_instance.save()
-            # Create a new DatasetMonitorLog instance
-            monitor_log_instance = DatasetMonitorLog(
-                dataset=dataset_instance, row_count=row_count, column_count=column_count
-            )
-            monitor_log_instance.save()
+            # Create a new DatasetMonitorLog instance            
+            dataset_instance.save()  
+            create_monitorlog(str(dataset_instance.id), row_count, column_count)            
+            monitor_log = get_dataset_monitorlog(str(dataset_instance.id))            
             # Serialize the Dataset instance
             serializer = DatasetSerializer(dataset_instance)
+            # Add monitor log to serializer data
+            serializer.data['monitor_log'] = monitor_log
             engine.dispose()
+            # get dataset monitor lo
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except Exception as e:
             print('Error:', e)
@@ -130,6 +144,14 @@ class DatasetViewSet(viewsets.ViewSet):
             columns = Dataset.objects.get(id=pk).get_dataset_columns()     
             # columns = dataset_instance.get_dataset_data().columns.tolist() 
             return Response(columns, status=status.HTTP_200_OK)            
+        except Exception as e:
+            return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    @action(detail=True, methods=['GET'], url_path='row_count')
+    def get_dataset_row_count(self, request, pk=None):
+        try:
+            row_count = Dataset.objects.get(id=pk).get_dataset_row_count()            
+            return Response(row_count, status=status.HTTP_200_OK)
         except Exception as e:
             return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     

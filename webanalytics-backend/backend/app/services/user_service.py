@@ -3,6 +3,8 @@ from rest_framework_simplejwt.tokens import AccessToken, RefreshToken, Outstandi
 from rest_framework_simplejwt.exceptions import TokenError
 from ..serializers import UserSerializer
 
+from ..api import get_dataset_monitorlog
+
 def get_user_from_token(token):
     try:                
         user_id = AccessToken(token).get('user_id')
@@ -40,6 +42,8 @@ def get_user_serialize(request):
     try:
         user_instance = get_user_from_token(token)
         serializer = UserSerializer(user_instance)
+        for datasets in serializer.data['datasets']:
+            datasets['monitor_logs'] = get_dataset_monitorlog(datasets['id'])                            
         return serializer.data
     except Exception as e:
         raise Exception(e)

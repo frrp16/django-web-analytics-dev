@@ -6,7 +6,7 @@ from .connection_serializer import DatabaseConnectionSerializer
 
 class UserSerializer(serializers.ModelSerializer):
     connection = DatabaseConnectionSerializer(many=False, read_only=True)
-    datasets = DatasetSerializer(many=True, read_only=True)
+    datasets = DatasetSerializer(many=True, read_only=True)    
     class Meta:
         model = User
         fields = ('username','first_name','last_name','email','password','connection','datasets')

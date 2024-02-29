@@ -41,6 +41,7 @@ DEV_MODE = True
 
 # Development base url
 DEV_BASE_URL = 'http://127.0.0.1:8000'
+ML_BACKEND_URL = os.environ.get('ML_BACKEND_URL') # ML_BACKEND base url
 # PRODUCTION base url
 
 

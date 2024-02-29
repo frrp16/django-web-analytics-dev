@@ -5,9 +5,26 @@ export const TrainModel = ({showTrainModelDialog, setShowTrainModelDialog, datas
 
     const [ newModel, setNewModel ] = useState({
         name: '',
-        description: '',
-        dataset: '',
+        algorithm: '',
+        features: [],
+        target: '',
+        task: 'regression',
+        epochs: 100,
+        batch_size: 32,
+
     });
+
+    const [ featureColumns, setFeatureColumns ] = useState([]);
+    const [ targetColumn, setTargetColumn ] = useState([]);
+
+    const [ modelType, setModelType ] = useState('regression');
+    const [ algorithm, setAlgorithm ] = useState({MLP: 'Multilayer Perceptron'});
+
+    const [ advancedOptions, setAdvancedOptions ] = useState(false);
+
+    const [ hiddenLayers, setHiddenLayers ] = useState([]);
+    const [ epochs, setEpochs ] = useState(100);
+    const [ batchSize, setBatchSize ] = useState(32);
 
     const handleTrainModel =  () => {
         console.log('Pressed')

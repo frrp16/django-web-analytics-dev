@@ -5,6 +5,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from .views import RegisterView, LogoutView, UserView
 from .views import DatasetViewSet
+from .views import TrainingView
 # from .views import MLModelViewSet
 from .views import DatabaseConnectionViewSet
 
@@ -21,6 +22,7 @@ app_urls = [
     path('register/', RegisterView.as_view(), name='register'),
     path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path('logout/', LogoutView.as_view(), name='logout'),    
+    path('logout/', LogoutView.as_view(), name='logout'),  
+    path('train/', TrainingView.as_view(), name='train'),    
     path('', include(router.urls)),    
 ]

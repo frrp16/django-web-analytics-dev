@@ -35,6 +35,14 @@ def get_dataset_columns(dataset_id):
         return response.json()
     except Exception as e:
         raise Exception(e)
+
+def get_dataset_row_count(dataset_id):
+    try:
+        response = requests.get(f'http://{BACKEND_HOST}/dataset/{dataset_id}/row_count', 
+                                auth=HTTPBasicAuth(os.environ.get('API_USER'), os.environ.get('API_PASSWORD')))        
+        return response.json()
+    except Exception as e:
+        raise Exception(e)
     
 def get_dataset_data(connection_id, dataset_id) -> pd.DataFrame:
     try:
@@ -56,6 +64,16 @@ def update_training_status(dataset_id, status):
                                   auth=HTTPBasicAuth(os.environ.get('API_USER'), os.environ.get('API_PASSWORD')), 
                                   json={'is_trained': status}
                                   )
+        return response.json()
+    except Exception as e:
+        raise Exception(e)
+
+def update_dataset_change_status(dataset_id, status):
+    try: 
+        response = requests.patch(f'http://{BACKEND_HOST}/dataset/{dataset_id}/', 
+                                  auth=HTTPBasicAuth(os.environ.get('API_USER'), os.environ.get('API_PASSWORD')), 
+                                  json={'status': status}
+                                  ) 
         return response.json()
     except Exception as e:
         raise Exception(e)

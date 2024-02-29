@@ -22,5 +22,5 @@ from ml_app.urls import app_urls
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include(app_urls)),
+    path('', include(app_urls)),
 ]

@@ -72,7 +72,9 @@ function Prediction(){
                                             <td className='border border-blue-gray-100 px-4 py-2 text-sm gap-4'>  
                                                 {dataset.status}
                                             </td>
-                                            <td className='border border-blue-gray-100 px-4 py-2 text-sm flex flex-row gap-4'>                                             
+                                            <td className='border border-blue-gray-100 px-4 py-2 text-sm '>
+                                                <div className="flex flex-row gap-4">
+                                                    
                                                 <Tooltip title="Refresh">
                                                     <div className="bg-green-500 text-white py-2.5 px-4 rounded-md cursor-pointer
                                                     hover:bg-green-300 hover:transition-colors duration-300">                                                            
@@ -92,6 +94,7 @@ function Prediction(){
                                                         <AutoGraphIcon/>                                                        
                                                     </div>
                                                 </Tooltip> 
+                                                </div>
 
                                             </td>                                        
                                         </tr>
