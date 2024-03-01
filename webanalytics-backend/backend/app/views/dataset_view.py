@@ -16,7 +16,7 @@ from ..models import Dataset, DatabaseConnection
 from ..serializers import DatasetSerializer, CreateDatasetSerializer
 from ..services import user_service
 
-from ..api import get_dataset_monitorlog, create_monitorlog
+from ..api import get_dataset_monitorlog, create_monitorlog, update_monitorlog
 
 
 import pandas as pd
@@ -228,21 +228,11 @@ class DatasetViewSet(viewsets.ViewSet):
         except Exception as e:
             print('Error:', e)
             return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    # @action(detail=True, methods=['GET'], url_path='data/all')
-    # def get_all_dataset_data(self, request, pk=None):    
-    #     try:
-    #         user = user_service.get_user_from_token(request.headers.get('Authorization').split()[1])
-    #         df = Dataset.objects.filter(user=user.id).get(id=pk).get_dataset_data()                   
-    #         # for each column of dataset, check its type
-    #         for column in df.columns:
-    #             # if there is null value and its numeric, fill it with 0
-    #             if df[column].isnull().sum() > 0 and df[column].dtype in ['int64', 'float64']:
-    #                 df[column].fillna(0, inplace=True)
-    #             # if there is null value and its string, fill it with '-'
-    #             elif df[column].isnull().sum() > 0 and df[column].dtype == 'object':
-    #                 df[column].fillna('-', inplace=True)             
-    #         return Response(df.to_dict(orient='records'), status=status.HTTP_200_OK)
-    #     except Exception as e:
-    #         print('Error:', e)
-    #         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    @action(detail=True, methods=['GET'], url_path='monitor')
+    def monitor_dataset(self, request, pk=None):
+        try:                    
+            monitor_log = update_monitorlog(pk)
+            return Response(monitor_log, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)   

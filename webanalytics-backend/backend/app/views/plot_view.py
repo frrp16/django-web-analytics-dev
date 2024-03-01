@@ -15,7 +15,7 @@ from ..models import Dataset
 import pandas as pd
 import json
 
-class PlotView(viewsets.ViewSet):   
+class PlotViewSet(viewsets.ViewSet):   
     permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [JWTAuthentication]
 

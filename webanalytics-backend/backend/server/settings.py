@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'app.apps.AppConfig',
     'celery',
     'channels',
+    'corsheaders',    
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -62,8 +63,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
-    'rest_framework_simplejwt.token_blacklist',
-    'corsheaders', #makes sure frontend connected with django
+    'rest_framework_simplejwt.token_blacklist',    
     
 ]
 
@@ -170,7 +170,7 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [('127.0.0.1', 6379)],
+            "hosts": [(os.environ.get('REDIS_HOST'), os.environ.get('REDIS_PORT'))],
         },
     }
 }
@@ -231,13 +231,5 @@ CORS_ALLOW_CREDENTIALS = True # fCOOKIES FOR FRONTEND
 
 APPEND_SLASH = True
 
-CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
-CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'
-
-
-CELERY_BEAT_SCHEDULE = {
-    'monitor_dataset' :{
-        'task': 'app.tasks.monitor_dataset',
-        'schedule': timedelta(seconds=20)
-    },
-}
+CELERY_BROKER_URL = f"redis://{os.environ.get('REDIS_HOST')}:{os.environ.get('REDIS_PORT')}/{os.environ.get('REDIS_DB')}"
+CELERY_RESULT_BACKEND = f"redis://{os.environ.get('REDIS_HOST')}:{os.environ.get('REDIS_PORT')}/{os.environ.get('REDIS_DB')}"

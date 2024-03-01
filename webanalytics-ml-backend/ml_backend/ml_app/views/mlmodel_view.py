@@ -33,13 +33,16 @@ class MLModelViewSet(viewsets.ViewSet):
             connection_id = request.data.get('connection_id')
             dataset_id = request.data.get('dataset_id')
             features = request.data.get('features')
-            target = request.data.get('target')
+            target = request.data.get('target')            
             algorithm = request.data.get('algorithm')
             task = request.data.get('task')
             # optional
+            scaler = request.data.get('scaler') | None  # standard, minmax
             hidden_layers = request.data.get('hidden_layers')
             epochs = request.data.get('epochs')
             batch_size = request.data.get('batch_size') 
+            if algorithm == 'LSTM':	
+                timesteps = request.data.get('timesteps')
 
             if not all([connection_id, dataset_id]):
                 return Response("Invalid data", status=status.HTTP_400_BAD_REQUEST)
@@ -62,13 +65,14 @@ class MLModelViewSet(viewsets.ViewSet):
                 dataset=data_json,
                 features=features,
                 target=target,
-                scaler=None,
+                scaler=scaler,
                 algorithm=algorithm,
                 task=task,
                 hidden_layers=hidden_layers,
                 dataset_id=dataset_id,
                 epochs=epochs,
-                batch_size=batch_size,                
+                batch_size=batch_size,
+                                
             )
             # update training status
             update_training_status(dataset_id, 'TRAINING')

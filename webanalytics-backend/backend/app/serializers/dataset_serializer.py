@@ -5,8 +5,7 @@ from ..models import Dataset
 class DatasetSerializer(serializers.ModelSerializer):    
     class Meta:
         model = Dataset
-        fields = '__all__'
-        extra_kwargs = {'user': {'write_only': True}}
+        fields = '__all__'        
 
 class CreateDatasetSerializer(serializers.ModelSerializer):
     class Meta:

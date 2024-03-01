@@ -4,9 +4,10 @@ from celery.utils.log import get_task_logger
 import pandas as pd
 
 from celery.exceptions import MaxRetriesExceededError
-from ..services.ml_service import MultilayerPerceptron
+from ..services.ml_service import MultilayerPerceptron, LSTM
 from ..services.preprocess_service import ScaleDataService, CleanDataService
 from ..services.dataset_service import update_training_status
+from ..services.notification_service import create_notification
 
 from celery.exceptions import MaxRetriesExceededError
 
@@ -27,6 +28,7 @@ def train_model(
     dataset_id: str,
     epochs: int,
     batch_size: int,  
+    timesteps: int | None
     ):
     try:
         logger.info(f"Training model on dataset {dataset_id}")
@@ -51,23 +53,37 @@ def train_model(
 
         # Create and train the model
         logger.info(f"Training {algorithm} model on dataset {dataset_id}")
-        if hidden_layers:
-            model = MultilayerPerceptron(
-                name=name,
-                features=features,
-                target=target,
-                task=task,
-                dataset_id=dataset_id,
-                hidden_layers=hidden_layers
-            )
-        else:
-            model = MultilayerPerceptron(
-                name=name,
-                features=features,
-                target=target,
-                task=task,
-                dataset_id=dataset_id
-            )
+        
+        match algorithm:
+            case "MLP":
+                if hidden_layers:
+                    model = MultilayerPerceptron(
+                        name=name,
+                        features=features,
+                        target=target,
+                        task=task,
+                        dataset_id=dataset_id,
+                        hidden_layers=hidden_layers
+                    )
+                else:
+                    model = MultilayerPerceptron(
+                        name=name,
+                        features=features,
+                        target=target,
+                        task=task,
+                        dataset_id=dataset_id
+                    )
+            case "LSTM":
+                model = LSTM(
+                    name=name,
+                    features=features,
+                    target=target,
+                    task=task,
+                    dataset_id=dataset_id,
+                    timesteps=timesteps if timesteps else 5
+                )
+            case _:
+                raise Exception("Invalid algorithm")
         
         logger.info(f"Dataset shape: {X.shape}")   
         logger.info(model.summary())                     

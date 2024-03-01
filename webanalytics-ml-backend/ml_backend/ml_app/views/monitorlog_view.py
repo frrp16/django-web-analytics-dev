@@ -6,6 +6,8 @@ from ..models import DatasetMonitorLog
 
 from ..serializers import DatasetMonitorLogSerializer
 
+from ..tasks import monitor_single_dataset
+
 class MonitorLogViewSet(viewsets.ViewSet):
     serializer_class = DatasetMonitorLogSerializer
 
@@ -19,6 +21,13 @@ class MonitorLogViewSet(viewsets.ViewSet):
         serializer = DatasetMonitorLogSerializer(queryset)
         return Response(serializer.data)
     
+    def create(self, request):
+        serializer = DatasetMonitorLogSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
     # get monitor logs for a dataset
     @action(detail=False, methods=['GET'], url_path='dataset/(?P<dataset_id>[^/.]+)')
     def get_monitor_logs(self, request, dataset_id):
@@ -26,9 +35,13 @@ class MonitorLogViewSet(viewsets.ViewSet):
         serializer = DatasetMonitorLogSerializer(queryset, many=True)
         return Response(serializer.data)
     
-    def create(self, request):
-        serializer = DatasetMonitorLogSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    @action(detail=False, methods=['POST'], url_path='monitor')
+    def monitor_dataset(self, request):
+        try:
+            dataset_id = request.data.get('dataset_id')
+            if not dataset_id:
+                return Response("Invalid data", status=status.HTTP_400_BAD_REQUEST)
+            monitor_single_dataset.delay(dataset_id)
+            return Response("Monitoring task started", status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)

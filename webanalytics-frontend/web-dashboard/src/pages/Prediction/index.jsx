@@ -10,6 +10,8 @@ import AutoGraphIcon from '@mui/icons-material/AutoGraph';
 
 import { Tooltip } from '@mui/material';
 
+import { updateMonitorLog } from "../../services/datasets.service";
+
 function Prediction(){
 
     const { currentUser, currentUserInformation, isGlobalLoading, setIsGlobalLoading } = useContext(AuthContext);
@@ -76,7 +78,8 @@ function Prediction(){
                                                 <div className="flex flex-row gap-4">
                                                     
                                                 <Tooltip title="Refresh">
-                                                    <div className="bg-green-500 text-white py-2.5 px-4 rounded-md cursor-pointer
+                                                    <div onClick={() => updateMonitorLog(dataset.id, currentUser)}
+                                                    className="bg-green-500 text-white py-2.5 px-4 rounded-md cursor-pointer
                                                     hover:bg-green-300 hover:transition-colors duration-300">                                                            
                                                         <CachedIcon/>                                                            
                                                     </div>

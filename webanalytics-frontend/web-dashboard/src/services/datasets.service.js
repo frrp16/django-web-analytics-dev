@@ -94,3 +94,12 @@ export const getAllDatasetsData = async (datasetId, accessToken, select, page_si
     }
     
 }
+
+export const updateMonitorLog = async (datasetId, accessToken) => {
+    const response = await axios.get(`${BASE_API_URL}dataset/${datasetId}/monitor/`, {
+        headers: {  
+            Authorization: `Bearer ${accessToken}`
+        }
+    });
+    return response;
+}

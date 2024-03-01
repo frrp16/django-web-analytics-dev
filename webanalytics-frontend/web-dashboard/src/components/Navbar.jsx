@@ -3,6 +3,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 
 import { AuthContext } from '../context/auth-context';
 import DialogModal from './Dialog';
@@ -54,7 +55,7 @@ function Navbar({ toggleSidebar }){
                     </div>
                     <div
                         className="hover:bg-slate-300 hover:transition-colors duration-300 p-3 rounded-full">
-                        <SettingsIcon/>
+                        <NotificationsIcon/>
                     </div>
                     <div onClick={() => setShowDialog(true)} 
                         className="hover:bg-slate-300 hover:transition-colors duration-300 p-3 rounded-full">

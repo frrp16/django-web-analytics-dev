@@ -15,6 +15,8 @@ import { Tooltip } from '@mui/material';
 import { AddConnection } from './addConnection.home';
 import { AddDataset } from './addDataset.home';
 
+import { updateMonitorLog } from '../../services/datasets.service';
+
 function Home() {
     const { currentUser, currentUserInformation, isGlobalLoading, setIsGlobalLoading } = useContext(AuthContext);
 
@@ -139,7 +141,8 @@ function Home() {
                                                     </div>
                                                 </Tooltip>
                                                 <Tooltip title="Refresh">
-                                                    <div className="bg-green-500 text-white py-2.5 px-4 rounded-md cursor-pointer
+                                                    <div onClick={() => updateMonitorLog(dataset.id, currentUser)}
+                                                    className="bg-green-500 text-white py-2.5 px-4 rounded-md cursor-pointer
                                                     hover:bg-green-300 hover:transition-colors duration-300">                                                            
                                                         <CachedIcon/>                                                            
                                                     </div>

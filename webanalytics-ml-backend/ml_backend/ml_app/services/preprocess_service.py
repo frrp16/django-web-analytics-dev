@@ -5,8 +5,7 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 class CleanDataService:
     def process(self, dataset: pd.DataFrame) -> pd.DataFrame:
-        try:
-            
+        try:            
             preprocessed_df = AutoClean(dataset, mode='auto')
             return preprocessed_df.output
         except Exception as e:
@@ -35,5 +34,16 @@ class ScaleDataService:
             else:
                 return None
             return scaled_df
+        except Exception as e:
+            return str(e)
+
+class SampleDataService:
+    def __init__(self, count, frac=0) -> None:
+        self.frac = frac
+        self.count = count
+
+    def process(self, dataset: pd.DataFrame) -> pd.DataFrame:
+        try:
+            return dataset.sample(frac=self.frac, random_state=1) if self.frac else dataset.sample(n=self.count, random_state=1)
         except Exception as e:
             return str(e)
