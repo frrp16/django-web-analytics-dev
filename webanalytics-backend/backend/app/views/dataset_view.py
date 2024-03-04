@@ -42,8 +42,7 @@ class DatasetViewSet(viewsets.ViewSet):
             queryset = Dataset.objects.filter(user=user.id)
             serializer = DatasetSerializer(queryset, many=True)
             # get dataset monitor log for each dataset
-            for dataset in serializer.data:
-                print('Dataset:', dataset)
+            for dataset in serializer.data:                
                 monitor_log = get_dataset_monitorlog(dataset['id'])
                 # Add monitor log to serializer data
                 dataset['monitor_log'] = monitor_log
@@ -56,14 +55,17 @@ class DatasetViewSet(viewsets.ViewSet):
         if request.user.is_staff:
             queryset = Dataset.objects.get(id=pk)            
             serializer = DatasetSerializer(queryset)
+            # get dataset monitor log
+            monitor_log = get_dataset_monitorlog(queryset.id)        
+            serializer.data['monitor_log'] = monitor_log    
             return Response(serializer.data)
+        
         user = user_service.get_user_from_token(request.headers.get('Authorization').split()[1])  
         queryset = Dataset.objects.filter(user=user.id)
         dataset = queryset.get(id=pk)
         serializer = DatasetSerializer(dataset)
         # get dataset monitor log
-        monitor_log = get_dataset_monitorlog(dataset.id)
-        # Add monitor log to serializer data
+        monitor_log = get_dataset_monitorlog(dataset.id)        
         serializer.data['monitor_log'] = monitor_log
         return Response(serializer.data)
     
@@ -147,11 +149,31 @@ class DatasetViewSet(viewsets.ViewSet):
         except Exception as e:
             return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
+    @action(detail=True, methods=['GET'], url_path='columns_type')
+    def get_dataset_columns_type(self, request, pk=None):
+        cache = request.query_params.get('cache')
+        try:
+            query_set = Dataset.objects.get(id=pk)
+            if cache == 'true':
+                columns_type = query_set.get_dataset_columns_type(use_cache=True)          
+                return Response(columns_type, status=status.HTTP_200_OK)
+            else:
+                columns_type = query_set.get_dataset_columns_type()
+                return Response(columns_type, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
     @action(detail=True, methods=['GET'], url_path='row_count')
     def get_dataset_row_count(self, request, pk=None):
-        try:
-            row_count = Dataset.objects.get(id=pk).get_dataset_row_count()            
-            return Response(row_count, status=status.HTTP_200_OK)
+        cache = request.query_params.get('cache')
+        try:            
+            query_set = Dataset.objects.get(id=pk)
+            if cache == 'true':
+                row_count = query_set.get_dataset_row_count(use_cache=True)          
+                return Response(row_count, status=status.HTTP_200_OK)
+            else:
+                row_count = query_set.get_dataset_row_count()
+                return Response(row_count, status=status.HTTP_200_OK)
         except Exception as e:
             return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
@@ -227,6 +249,14 @@ class DatasetViewSet(viewsets.ViewSet):
             return Response(total_pages, status=status.HTTP_200_OK)
         except Exception as e:
             print('Error:', e)
+            return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=True, methods=['GET'], url_path='plot_type')
+    def get_dataset_plot_type(self, request, pk=None):
+        try:
+            plot_type = Dataset.objects.get(id=pk).get_dataset_plot_type()            
+            return Response(plot_type, status=status.HTTP_200_OK)
+        except Exception as e:
             return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
     @action(detail=True, methods=['GET'], url_path='monitor')

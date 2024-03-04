@@ -1,4 +1,6 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect, useRef } from 'react';
+import useWebSocket, { ReadyState } from 'react-use-websocket'; 
+
 import MenuIcon from '@mui/icons-material/Menu';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -9,11 +11,54 @@ import { AuthContext } from '../context/auth-context';
 import DialogModal from './Dialog';
 
 
+
 function Navbar({ toggleSidebar }){
     const [isSpinning, setIsSpinning] = useState(false);
     const [showDialog, setShowDialog] = useState(false);
+    
 
-    const { currentUserInformation, logout } = useContext(AuthContext);
+    const { currentUserInformation, logout, socketURL, socketConncted, setSocketConnected } = useContext(AuthContext);
+    
+    const {
+        sendMessage,
+        lastMessage,
+        readyState,
+        getWebSocket,
+    } = useWebSocket(socketURL);
+
+    useEffect(() => {
+        if (readyState === ReadyState.OPEN && !socketConncted) {
+            console.log('Connected');
+            setSocketConnected(true);
+        }
+    }
+    , [readyState]);
+
+    // useEffect(() => {
+    //     if (socketURL ) {
+    //         getWebSocket(socketURL);
+    //     }
+    // }
+    // , [socketURL]);
+
+    useEffect(() => {
+        if (lastMessage) {
+            console.log(lastMessage.data);
+        }
+    }
+    , [lastMessage]);
+
+    useEffect(() => {
+        if (socketConncted) {
+            sendMessage('Hello');
+        }
+    }
+    , [socketConncted]);
+
+
+        // Clean up function
+        // Only re-run the effect if socketURL changes
+
 
     const handleClick = () => {
         setIsSpinning(true);

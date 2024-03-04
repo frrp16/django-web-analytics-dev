@@ -35,3 +35,22 @@ class MLModel(models.Model):
             return model_summary
         except Exception as e:
             raise Exception(e)
+        
+    def get_model_layers(self):
+        # get layers of the model with output shape
+        try:
+            with h5py.File(BytesIO(self.model_file), 'r') as file:
+                model = keras.models.load_model(file)
+                layers = [(layer.name, layer.output_shape) for layer in model.layers]
+            return layers
+        except Exception as e: 
+            raise Exception(e)
+
+    def predict(self, data):
+        try:
+            with h5py.File(BytesIO(self.model_file), 'r') as file:
+                model = keras.models.load_model(file)
+                prediction = model.predict(data) 
+            return prediction
+        except Exception as e:
+            raise Exception(e)

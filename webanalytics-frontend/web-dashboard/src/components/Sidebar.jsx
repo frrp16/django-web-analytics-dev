@@ -7,9 +7,9 @@ import { Link } from 'react-router-dom';
 function Sidebar({ isOpen }){
     return(
         <div>
-            <div className={`overflow-auto fixed top-0 -left-64 w-64 min-h-full py-6 bg-slate-900 shadow transition-transform duration-500 ease-in-out ${isOpen ? 'translate-x-full' : 'translate-x-0'}`}>
+            <div className={`z-20 overflow-auto fixed top-0 -left-64 w-64 min-h-full py-6 bg-slate-900 bg-opacity-90 shadow transition-transform duration-500 ease-in-out ${isOpen ? 'translate-x-full' : 'translate-x-0'}`}>
                 <div className='h-[60px]'></div>
-                <div className="flex-col justify-start items-start gap-4 inline-flex">
+                <div className="flex-col justify-start items-start gap-4 inline-flex overflow-auto">
                     <Link to="/home"><div className="self-stretch h-10 px-10 py-8 min-w-64 justify-start items-center gap-[2vw] inline-flex 
                     hover:bg-slate-500 hover:transition-colors duration-300">
                         <HomeIcon sx={{color: "white"}}/>                    

@@ -3,10 +3,6 @@ import axios from "axios";
 
 const BASE_API_URL = 'http://127.0.0.1:8000/'
 
-// const stream = new Readable({
-//     read() {}
-//   });
-
 export const getDatasetColumns = async (datasetId, accessToken) => {
     const response = await axios.get(`${BASE_API_URL}dataset/${datasetId}/columns/`, {
         headers: {
@@ -14,6 +10,16 @@ export const getDatasetColumns = async (datasetId, accessToken) => {
         }
     });
     return response;
+}
+
+export const getDatasetColumnsType = async (datasetId, accessToken) =>{
+    const response = await axios.get(`${BASE_API_URL}dataset/${datasetId}/columns_type/`, {
+        headers: {
+            Authorization: `Bearer ${accessToken}`
+        }
+    });
+    return response;
+
 }
 
 export const getDatasetData = async (datasetId, accessToken, page = 1, page_size = 50, order = false, asc = false, columns = []) => {

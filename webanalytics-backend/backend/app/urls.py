@@ -10,13 +10,14 @@ from .views import TrainingView
 from .views import DatabaseConnectionViewSet
 from .views import NotificationViewSet
 from .views import PlotViewSet
+from .views import MLModelView
 
 router = DefaultRouter()
 router.register(r'users', UserView, basename='User')
 router.register(r'connection', DatabaseConnectionViewSet, basename='DatabaseConnection')
 router.register(r'dataset', DatasetViewSet, basename='Dataset')
 router.register(r'notification', NotificationViewSet, basename='Notification')
-# router.register(r'mlmodel', MLModelViewSet, basename='MLModel')
+router.register(r'mlmodel', MLModelView, basename='MLModel')
 router.register(r'plot', PlotViewSet, basename='Plot')
 
 app_urls = [
@@ -24,5 +25,6 @@ app_urls = [
     path('login/', LoginView.as_view(), name='login'),   
     path('logout/', LogoutView.as_view(), name='logout'),  
     path('train/', TrainingView.as_view(), name='train'),    
+    # path('mlmodel/', MLModelView.as_view(), name='mlmodel'),
     path('', include(router.urls)),    
 ]

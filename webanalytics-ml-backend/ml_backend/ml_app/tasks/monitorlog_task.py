@@ -43,19 +43,12 @@ def monitor_dataset(self):
                         dataset_instance["user"], 
                         f"Monitor log for dataset '{dataset_instance['name']}' updated, Dataset status changed.", 
                         "INFO",
-                        'OTHER'
+                        'MONITORING'
                         )              
                     logger.info(f"Monitor log for dataset {dataset} updated, Dataset status changed.")
                 else:                    
                     last_monitor_log.timestamp = timezone.now()
                     last_monitor_log.save(update_fields=['timestamp'])
-                    # create_notification(
-                    #     "Monitor Log", 
-                    #     dataset_instance["user"], 
-                    #     f"Monitor log for dataset '{dataset_instance['name']}' is up to date.", 
-                    #     "INFO",
-                    #     'OTHER'
-                    #     )
                     logger.info(f"Monitor log for dataset {dataset} is up to date.")
         return True
     except Exception as e:
@@ -83,7 +76,9 @@ def monitor_single_dataset(self, dataset_id):
         monitor_log = DatasetMonitorLog(dataset=dataset_id, row_count=row_count, column_count=column_count)
         # if row count or column count is different from last monitor log, update monitor log
         if last_monitor_log.row_count != row_count or last_monitor_log.column_count != column_count:
+            monitor_log.unacknowledged_rows = row_count - last_monitor_log.row_count
             monitor_log.save()
+            # get the difference in row count            
             # get dataset instance and update status
             status = 'CHANGED'   
             update_dataset_change_status(dataset_id, status)        
@@ -92,7 +87,7 @@ def monitor_single_dataset(self, dataset_id):
                 dataset_instance["user"], 
                 f"Monitor log for dataset '{dataset_instance['name']}' updated, Dataset status changed.", 
                 "INFO",
-                'OTHER'
+                'MONITORING'
                 )              
             logger.info(f"Monitor log for dataset {dataset_id} updated, Dataset status changed.")
         else:                    
@@ -103,7 +98,7 @@ def monitor_single_dataset(self, dataset_id):
                 dataset_instance["user"], 
                 f"Monitor log for dataset '{dataset_instance['name']}' is up to date.", 
                 "INFO",
-                'OTHER'
+                'MONITORING'
                 )
             logger.info(f"Monitor log for dataset {dataset_id} is up to date.")
         return True
@@ -117,7 +112,7 @@ def monitor_single_dataset(self, dataset_id):
                 dataset_instance["user"], 
                 f"Monitor log for dataset '{dataset_instance['name']}' failed to update.", 
                 "ERROR",
-                'OTHER'
+                'MONITORING'
             )
             logger.error("Max retries exceeded. Task failed.")
         return False

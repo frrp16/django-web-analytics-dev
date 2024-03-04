@@ -1,0 +1,30 @@
+version: '3.1'
+
+services:
+  ml_backend:
+    build: webanalytics-ml-backend/
+    container_name: django-webanalytics-ml_backend
+    volumes:
+      - .:/app
+    ports:
+      - "8001:8001"
+    command: 
+      - celery -A ml_backend/ml_server worker --beat -l info
+    environment:
+      - DATABASE_NAME=webanalytics_model_dev
+      - DATABASE_USER=django_webanalytics_dev
+      - DATABASE_PASSWORD=django098
+      - DATABASE_HOST=django-postgres
+      - DATABASE_PORT=5432
+      - REDIS_HOST=django-redis
+      - REDIS_PORT=6379
+      - REDIS_DB=2
+      - SECRET_KEY=django-insecure-cyot)5ogye2&%mx(#q7m2+gy$g$_#=+wt*#v7h!n#o3*q+gr@4
+      - API_USER=ml-backend
+      - API_PASSWORD=django-mlbackend
+      - BACKEND_URL=http://127.0.0.1:8000
+  
+networks:
+  default:
+    external:
+      name: django_webanalytics_network

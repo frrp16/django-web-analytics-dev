@@ -15,7 +15,7 @@ import Register from './pages/Register';
 import { AuthContext } from './context/auth-context';
 
 function App() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { currentUser, isGlobalLoading } = useContext(AuthContext)
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
@@ -32,16 +32,18 @@ function App() {
       return (
       <>
       {isGlobalLoading && (
-            <div className="fixed w-full h-full inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-                <Spinner className="h-16 w-16 text-blue-700" />
+            // create loading with spinner
+            <div className='fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 z-50 flex justify-center items-center'>
+              <div class="border-t-transparent border-solid animate-spin rounded-full border-blue-500 border-8 h-32 w-32"></div>
             </div>
       )}
-        <Navbar  />  
+        <Navbar toggleSidebar={toggleSidebar}  />  
         <div className='w-screen h-[70px]'></div>
         <div className='flex'>
           <Sidebar isOpen={isSidebarOpen} />
           <div
-            className={`overflow-auto px-6 pb-2 ${isSidebarOpen ? 'translate-x-64' : 'translate-x-0'} min-w-[200px]`}
+            // className={`overflow-auto px-6 pb-2 ${isSidebarOpen ? 'translate-x-64' : 'translate-x-0'} min-w-[200px]`}
+            className={`overflow-auto pb-2 min-w-[200px] px-6 w-full transition-transform duration-500 ease-in-out ${isSidebarOpen ? 'translate-x-64' : 'translate-x-0'}`}            
             style={{ width: isSidebarOpen ? 'calc(100% - 256px)' : '100%'}}
           >
             <Outlet />

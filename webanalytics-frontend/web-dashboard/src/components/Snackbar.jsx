@@ -4,28 +4,27 @@ import Alert from '@mui/material/Alert';
 
 import { useState } from 'react';
 
-export default function CustomizedSnackbars({children}) {
-  const [open, setOpen] = useState(false);
-
-  const handleClick = () => {
-    setOpen(true);
-  };
-
+export default function CustomizedSnackbars({
+  children, open, onClose, severity
+}) {    
   const handleClose = (event, reason) => {
     if (reason === 'clickaway') {
       return;
     }
-
-    setOpen(false);
+    onClose(event, reason);
   };
 
   return (
-    <div>
-      <Button onClick={handleClick}>Open Snackbar</Button>
-      <Snackbar open={open} autoHideDuration={6000} onClose={handleClose}>
+    <div style={{ position: 'fixed', bottom: '10px', left: '10px', zIndex:999 }}>
+      <Snackbar 
+        open={open} 
+        autoHideDuration={5000} 
+        onClose={handleClose}        
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}     
+      >
         <Alert
           onClose={handleClose}
-          severity="success"
+          severity={severity}
           variant="filled"
           sx={{ width: '100%' }}
         >

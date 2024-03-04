@@ -7,7 +7,7 @@ import DialogModal from "../../components/Dialog";
 function Login(){
     const navigate = useNavigate();
     
-    const { currentUser, login, setIsGlobalLoading } = useContext(AuthContext) 
+    const { currentUser, login,isGlobalLoading, setIsGlobalLoading } = useContext(AuthContext) 
 
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -34,7 +34,13 @@ function Login(){
     }
 
     return(   
-    <>             
+    <>              
+         {isGlobalLoading && (
+            // create loading with spinner
+            <div className='fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 z-50 flex justify-center items-center'>
+              <div class="border-t-transparent border-solid animate-spin rounded-full border-blue-500 border-8 h-32 w-32"></div>
+            </div>
+        )}
         <DialogModal
             open={showLoginDialog}
             onClose={() => setShowLoginDialog(false)}

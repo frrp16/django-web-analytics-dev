@@ -70,7 +70,6 @@ function Datasets(){
     const handleSort = async (column, asc) => {
         try {
             setIsLoading(true);
-            console.log('sort', column)
             const response = await getDatasetData(selectedDataset.value.id, currentUser, 1, page_size, "true", asc, column);
             if (response.status === 200) {
                 setDatasetData(response.data);
@@ -86,28 +85,23 @@ function Datasets(){
 
     // useEffect if there is a change in selectedDataset, then call handleDatasetChange
     useEffect(() => {
-        console.log('dataset change')
         if (selectedDataset.value !== null) {
-            console.log(selectedDataset.value.id)
             handleDatasetChange();
         }
     }, [selectedDataset]);
 
     // useEffect if there is a change in page_size, then call handleDatasetChange
     useEffect(() => {
-        console.log('page_size change')
         handleDatasetChange();
     }, [page_size]);
 
     // useEffect to load datasetColumns and datasetData from sessionStorage to state
     useEffect(() => {
         if (sessionStorage.getItem('datasetColumns') !== null) {
-            setDatasetColumns(JSON.parse(sessionStorage.getItem('datasetColumns')));
-            console.log(datasetColumns)
+            setDatasetColumns(JSON.parse(sessionStorage.getItem('datasetColumns')));            
         }
         if (sessionStorage.getItem('datasetData') !== null) {
-            setDatasetData(JSON.parse(sessionStorage.getItem('datasetData')));
-            console.log(datasetData)
+            setDatasetData(JSON.parse(sessionStorage.getItem('datasetData')));            
         }
     }
     , []);
@@ -121,10 +115,11 @@ function Datasets(){
                 {/* DROPDOWN TO SELECT DATASET */}
                 {<div className="flex flex-row items-center mb-4">
                     <Select
+                        // styles={{menuPortal: provided => ({ ...provided, zIndex: -999 })}}
+                        menuPortalTarget={document.body} 
                         options={userDatasets.map(dataset => ({value: dataset, label: dataset.name}))}
                         onChange={(selectedOption) => {
-                            setSelectedDataset(selectedOption);
-                            console.log('selectedOption', selectedOption);
+                            setSelectedDataset(selectedOption);                            
                             if (selectedDataset.value !== null) {
                                 handleDatasetChange();
                             }                                                 
@@ -158,7 +153,7 @@ function Datasets(){
                         <div className="h-full w-full overflow-auto rounded-lg shadow-lg py-4 flex flex-col">
                             {isLoading ? (
                                 <div className="flex justify-center items-center h-[400px]">
-                                    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+                                    <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-400"></div>
                                 </div>
                             ) : (
                                 <div className='flex flex-col gap-4 w-full'>
@@ -173,9 +168,7 @@ function Datasets(){
                                                         <div className='flex flex-row justify-between items-center'>
                                                             <div>{column}</div>
                                                             <KeyboardArrowDownIcon className='ml-1 cursor-pointer' 
-                                                            onClick={() =>{
-                                                                console.log('sort', column)
-                                                                console.log(selectedDataset)
+                                                            onClick={() =>{                                                                                                                                
                                                                 setIsAscending(!isAscending)
                                                                 handleSort(column, isAscending)
                                                             }}/>

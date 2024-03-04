@@ -5,11 +5,12 @@ services:
     build: webanalytics-backend/
     container_name: django-webanalytics-backend
     volumes:
-      - .:/app
+    - .:/webanalytics-backend
     ports:
       - "8000:8000"
     depends_on:
       - django-postgres
+      - django-redis      
     environment:
     - DATABASE_NAME=webanalytics_dev
     - DATABASE_USER=django_webanalytics_dev
@@ -20,17 +21,17 @@ services:
     - REDIS_PORT=6379
     - REDIS_DB=0
     - SECRET_KEY=django-insecure-vxj2#_qaf8ed7(qwb&*_@a$q(+7-%ft$p+cir_dir$snr-!g5p  
-    - ML_BACKEND_URL=http://127.0.0.1:8001
+    - ML_BACKEND_URL=http://mlbackend:8001
     
-  ml_backend:
+  mlbackend:
     build: webanalytics-ml-backend/
     container_name: django-webanalytics-ml_backend
     volumes:
-      - .:/app
+      - .:/webanalytics-ml-backend
+    # command: 
+    # - celery -A ml_server worker --beat -l info
     ports:
       - "8001:8001"
-    command: 
-      - celery -A ml_backend/ml_server worker --beat -l info
     environment:
       - DATABASE_NAME=webanalytics_model_dev
       - DATABASE_USER=django_webanalytics_dev
@@ -43,7 +44,10 @@ services:
       - SECRET_KEY=django-insecure-cyot)5ogye2&%mx(#q7m2+gy$g$_#=+wt*#v7h!n#o3*q+gr@4
       - API_USER=ml-backend
       - API_PASSWORD=django-mlbackend
-      - BACKEND_URL=http://127.0.0.1:8000
+      - BACKEND_URL=http://backend:8000
+    depends_on:
+      - django-postgres
+      - django-redis
   
   django-postgres:
     image: postgres:15

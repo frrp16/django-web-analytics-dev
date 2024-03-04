@@ -1,0 +1,26 @@
+version: '3.2'
+
+services:
+  backend:
+    build: webanalytics-backend/
+    container_name: django-webanalytics-backend
+    volumes:
+    - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+    - DATABASE_NAME=webanalytics_dev
+    - DATABASE_USER=django_webanalytics_dev
+    - DATABASE_PASSWORD=django098
+    - DATABASE_HOST=django-postgres
+    - DATABASE_PORT=5432
+    - REDIS_HOST=django-redis
+    - REDIS_PORT=6379
+    - REDIS_DB=0
+    - SECRET_KEY=django-insecure-vxj2#_qaf8ed7(qwb&*_@a$q(+7-%ft$p+cir_dir$snr-!g5p  
+    - ML_BACKEND_URL=http://127.0.0.1:8001
+  
+networks:
+  default:
+    external:
+      name: django_webanalytics_network

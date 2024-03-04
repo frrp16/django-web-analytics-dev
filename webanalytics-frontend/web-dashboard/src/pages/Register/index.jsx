@@ -7,7 +7,7 @@ import DialogModal from "../../components/Dialog";
 
 function Register(){
 
-    const { currentUser, register, setIsGlobalLoading } = useContext(AuthContext) 
+    const { currentUser, register, isGlobalLoading,  setIsGlobalLoading } = useContext(AuthContext) 
 
     const navigate = useNavigate();
     
@@ -44,6 +44,12 @@ function Register(){
 
     return(   
     <>        
+     {isGlobalLoading && (
+            // create loading with spinner
+            <div className='fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 z-50 flex justify-center items-center'>
+              <div class="border-t-transparent border-solid animate-spin rounded-full border-blue-500 border-8 h-32 w-32"></div>
+            </div>
+        )}
         <DialogModal
             open={showRegisterDialog}
             onClose={() => setShowRegisterDialog(false)}

@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import json
 from keras import models, layers
-from keras import optimizers
+from keras import optimizers, callbacks
 from django.conf import settings
 from ..models import MLModel
 
@@ -26,7 +26,7 @@ class BaseModel():
 
     def train(self, X, y, epochs=100, batch_size=10):     
         # Convert pandas dataframe to numpy array
-        self.model.fit(X, y, epochs=epochs, batch_size=batch_size, validation_split=0.2)
+        self.model.fit(X, y, epochs=epochs, batch_size=batch_size, validation_split=0.2)    
 
     def save(self):
         try:

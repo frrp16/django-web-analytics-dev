@@ -11,4 +11,7 @@ COPY . .
 
 EXPOSE 8001
 
-CMD ["python", "ml_backend/manage.py", "runserver", "0.0.0.0:8001"]
+COPY start.sh /start.sh
+CMD ["/bin/bash", "/start.sh"]
+
+# CMD ["ls"]

@@ -19,19 +19,13 @@ class PlotService:
 
     def create_time_series_plot(self):
         # find datetime column
-        df_dtypes = self.df.dtypes
-        print(df_dtypes)
-        # print(self.columns)
+        df_dtypes = self.df.dtypes        
         # find datetime column
-        datetime_col = df_dtypes[df_dtypes == 'datetime64[ns]'].index[0]   
-        # print(datetime_col)
-        # Create a ColumnDataSource with the data that contains first [column_count] columns        
+        datetime_col = df_dtypes[df_dtypes == 'datetime64[ns]'].index[0]           
         source = ColumnDataSource(data=self.df[self.columns])        
         # Create a new plot
-        plot = figure(x_axis_type='datetime', max_height=200)
-        # Add lines
-        line = plot.line(x=datetime_col, y=self.columns[1], source=source, line_width=2, line_alpha=0.6)
-        # Create Select widget by excluding datetime column
+        plot = figure(x_axis_type='datetime', max_height=200)        
+        line = plot.line(x=datetime_col, y=self.columns[1], source=source, line_width=2, line_alpha=0.6)        
         select = Select(title="Select a column", value=self.columns[1], options=[col for col in self.columns if col != datetime_col])
         # Create a callback
         callback = CustomJS(args=dict(source=source, line=line), code="""
@@ -41,12 +35,11 @@ class PlotService:
             line.glyph.y.field = column;                            
             source.change.emit();
         """)
-
         select.js_on_change('value', callback)
         # Create layout
         layout = column(select, plot)
         # return json dump of layout
-        return json.dumps(json_item(layout, "time_series_plot"))
+        return json.dumps(json_item(layout))
     
 
     def create_pair_scatter_plot(self):        
@@ -69,7 +62,7 @@ class PlotService:
             var data = source.data;
             const column = cb_obj.value;
             console.log(column)               
-            circle.glyph.x.field = column;                            
+            circle.glyph.x.field = column;                             
             source.change.emit();
         """)
 
@@ -85,7 +78,7 @@ class PlotService:
         # Create layout
         layout = column(row(select_x, select_y), plot)
         # return json dump of layout
-        return json.dumps(json_item(layout, "pair_scatter_plot"))
+        return json.dumps(json_item(layout))
         
     def create_pie_chart(self):
         print(self.df.dtypes)

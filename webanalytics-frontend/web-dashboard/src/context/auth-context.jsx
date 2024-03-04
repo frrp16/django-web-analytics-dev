@@ -3,15 +3,21 @@ import { createContext, useEffect, useState } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
 
+
 const BASE_API_URL = "http://127.0.0.1:8000/";
+const BASE_WS_URL = "ws://127.0.0.1:8000/";
 
 export const AuthContext = createContext();
 
 export const AuthContextProvider = ({ children }) => {
-    const accessTokenCookie = Cookies.get('accessToken');
+    const accessTokenCookie = Cookies.get('accessToken');    
+
     const [currentUser, setCurrentUser] = useState(accessTokenCookie ? JSON.parse(accessTokenCookie) : null);
     const [currentUserInformation, setCurrentUserInformation] = useState(JSON.parse(sessionStorage.getItem('currentUserInformation')) || null);
     const [isGlobalLoading, setIsGlobalLoading] = useState(false);
+    const [socketURL, setSocketURL] = useState(sessionStorage.getItem('socketURL') || '')
+    const [socketConncted, setSocketConnected] = useState(false);
+
 
     const login = async (username, password) => {    
          
@@ -67,17 +73,18 @@ export const AuthContextProvider = ({ children }) => {
         setCurrentUserInformation(null);
     };
 
-    useEffect(() => {        
-        Cookies.set(
-            'accessToken', JSON.stringify(currentUser),
-            { expires: 1/2, secure: false, sameSite: 'lax'}
-        )
-    }, [currentUser]);
+    // useEffect(() => {        
+    //     Cookies.set(
+    //         'accessToken', JSON.stringify(currentUser),
+    //         { expires: 1/2, secure: false, sameSite: 'lax'}
+    //     )
+    // }, [currentUser]);
 
     useEffect(() => {        
         async function fetchCurrentUserInformation(){
             try {                
                 setIsGlobalLoading(true)
+                console.log("Fetch user info")
                 const response = await axios.get(`${BASE_API_URL}users/`, {
                     headers: {
                         Authorization: `Bearer ${currentUser}`
@@ -86,6 +93,8 @@ export const AuthContextProvider = ({ children }) => {
                 if (response.status === 200){
                     sessionStorage.setItem('currentUserInformation', JSON.stringify(response.data))
                     setCurrentUserInformation(response.data)
+                    setSocketURL(`${BASE_WS_URL}ws/notification/${response.data.username}/`)
+                    sessionStorage.setItem('socketURL', `${BASE_WS_URL}ws/notification/${response.data.username}/`)
                 }
             } catch (error) {
                 console.error(error);
@@ -96,9 +105,20 @@ export const AuthContextProvider = ({ children }) => {
             
         }
         if(currentUser){
-            fetchCurrentUserInformation()
+            fetchCurrentUserInformation()                  
         }
     }, [currentUser])
+
+    useEffect(() => {
+        if (socketURL === ''){
+            setSocketURL(`${BASE_WS_URL}ws/notification/${currentUserInformation?.username}/`)
+            sessionStorage.setItem('socketURL', socketURL)
+            console.log("Socket URL: ", socketURL)
+        }
+
+    }, [])
+                
+            
 
     return (
         <AuthContext.Provider value={
@@ -106,7 +126,7 @@ export const AuthContextProvider = ({ children }) => {
                 currentUser, setCurrentUser, 
                 currentUserInformation, setCurrentUserInformation,  
                 isGlobalLoading, setIsGlobalLoading,               
-                login, register, logout }
+                login, register, logout, socketURL, socketConncted, setSocketConnected }
         }>
             {children}
         </AuthContext.Provider>

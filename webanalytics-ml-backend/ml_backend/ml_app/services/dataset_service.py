@@ -14,7 +14,7 @@ BACKEND_HOST = settings.BACKEND_HOST
 
 def get_connection_url(connection_id):
     try:
-        response = requests.get(f'http://{BACKEND_HOST}/connection/{connection_id}/url', 
+        response = requests.get(f'{BACKEND_HOST}/connection/{connection_id}/url', 
                                 auth=HTTPBasicAuth(os.environ.get('API_USER'), os.environ.get('API_PASSWORD')))       
         return response.json()
     except Exception as e:
@@ -22,7 +22,7 @@ def get_connection_url(connection_id):
 
 def get_dataset_instance(dataset_id):
     try:
-        response = requests.get(f'http://{BACKEND_HOST}/dataset/{dataset_id}', 
+        response = requests.get(f'{BACKEND_HOST}/dataset/{dataset_id}', 
                                 auth=HTTPBasicAuth(os.environ.get('API_USER'), os.environ.get('API_PASSWORD')))        
         return response.json()
     except Exception as e:
@@ -30,7 +30,7 @@ def get_dataset_instance(dataset_id):
 
 def get_dataset_columns(dataset_id):
     try:
-        response = requests.get(f'http://{BACKEND_HOST}/dataset/{dataset_id}/columns', 
+        response = requests.get(f'{BACKEND_HOST}/dataset/{dataset_id}/columns', 
                                 auth=HTTPBasicAuth(os.environ.get('API_USER'), os.environ.get('API_PASSWORD')))        
         return response.json()
     except Exception as e:
@@ -38,7 +38,7 @@ def get_dataset_columns(dataset_id):
 
 def get_dataset_row_count(dataset_id):
     try:
-        response = requests.get(f'http://{BACKEND_HOST}/dataset/{dataset_id}/row_count', 
+        response = requests.get(f'{BACKEND_HOST}/dataset/{dataset_id}/row_count', 
                                 auth=HTTPBasicAuth(os.environ.get('API_USER'), os.environ.get('API_PASSWORD')))        
         return response.json()
     except Exception as e:
@@ -60,7 +60,7 @@ def get_dataset_data(connection_id, dataset_id) -> pd.DataFrame:
 
 def update_training_status(dataset_id, status):
     try:
-        response = requests.patch(f'http://{BACKEND_HOST}/dataset/{dataset_id}/', 
+        response = requests.patch(f'{BACKEND_HOST}/dataset/{dataset_id}/', 
                                   auth=HTTPBasicAuth(os.environ.get('API_USER'), os.environ.get('API_PASSWORD')), 
                                   json={'is_trained': status}
                                   )
@@ -70,7 +70,7 @@ def update_training_status(dataset_id, status):
 
 def update_dataset_change_status(dataset_id, status):
     try: 
-        response = requests.patch(f'http://{BACKEND_HOST}/dataset/{dataset_id}/', 
+        response = requests.patch(f'{BACKEND_HOST}/dataset/{dataset_id}/', 
                                   auth=HTTPBasicAuth(os.environ.get('API_USER'), os.environ.get('API_PASSWORD')), 
                                   json={'status': status}
                                   ) 
@@ -80,7 +80,7 @@ def update_dataset_change_status(dataset_id, status):
 
 # def update_monitor_log(dataset_id, row_count, column_count, access_token):
 #     try:
-#         response = requests.post(f'http://{BACKEND_HOST}/dataset/{dataset_id}/monitor_log', 
+#         response = requests.post(f'{BACKEND_HOST}/dataset/{dataset_id}/monitor_log', 
 #                                   headers={'Authorization': f'Bearer {access_token}'}, 
 #                                   json={'row_count': row_count, 'column_count': column_count}
 #                                   )

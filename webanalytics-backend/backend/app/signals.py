@@ -3,14 +3,20 @@ from django.dispatch import receiver
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from .models import Notification
+from django.conf import settings
+
+import pytz
+
 
 @receiver(post_save, sender=Notification)
-def create_notification(sender, instance, created, **kwargs):
-    print(instance)
-    if created:
+def create_notification(sender, instance, created, **kwargs):    
+    if created:               
+        # get instance.created_at as datetime
+        date_create = instance.created_at.astimezone(pytz.timezone(settings.TIME_ZONE))
+
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
-            f"notification_{instance.user.id}",
+            f"notification_{instance.user.username}",
             {
                 "type": "send_notification",
                 "notification": {
@@ -18,7 +24,8 @@ def create_notification(sender, instance, created, **kwargs):
                     "message": instance.message,
                     "type": instance.type,
                     "context": instance.context,
-                    "created_at": instance.created_at.strftime("%c")
+                    # convert datetime to string with timezone
+                    "created_at": date_create.strftime("%c")
                 }
             }                
         )

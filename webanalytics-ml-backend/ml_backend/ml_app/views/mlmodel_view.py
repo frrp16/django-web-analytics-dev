@@ -7,11 +7,13 @@ from rest_framework.decorators import action
 from ..models import MLModel
 from ..serializers import MLModelSerializer
 
-from ..services.dataset_service import get_dataset_data, update_training_status
+from ..services.dataset_service import get_dataset_data, update_training_status, get_dataset_instance
 
 import pandas as pd
 import ast
+import uuid
 
+import traceback
 
 class MLModelViewSet(viewsets.ViewSet):    
     serializer_class = MLModelSerializer
@@ -26,34 +28,58 @@ class MLModelViewSet(viewsets.ViewSet):
         serializer = MLModelSerializer(queryset)        
         return Response(serializer.data)
     
+    @action(detail=False, methods=['GET'], url_path='dataset')
+    def get_model_by_dataset(self, request):
+        dataset_id = request.query_params.get('dataset')
+        try:
+            queryset = MLModel.objects.filter(dataset=dataset_id)
+            serializer = MLModelSerializer(queryset, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
+             
     @action(detail=False, methods=['POST'], url_path='train')
     def train_model(self, request):        
         try:     
             name = request.data.get('name')       
             connection_id = request.data.get('connection_id')
             dataset_id = request.data.get('dataset_id')
-            features = request.data.get('features')
-            target = request.data.get('target')            
+            features = request.data.getlist('features')
+            target = request.data.getlist('target')            
             algorithm = request.data.get('algorithm')
             task = request.data.get('task')
             # optional
-            scaler = request.data.get('scaler') | None  # standard, minmax
-            hidden_layers = request.data.get('hidden_layers')
+            scaler = request.data.get('scaler')  # standard, minmax
+            hidden_layers = request.data.getlist('hidden_layers')
             epochs = request.data.get('epochs')
-            batch_size = request.data.get('batch_size') 
-            if algorithm == 'LSTM':	
-                timesteps = request.data.get('timesteps')
+            batch_size = request.data.get('batch_size')             
+            timesteps = request.data.get('timesteps')
+
+
+            print(f"Features: {features}")
+            print(f"Target: {target}")
+            print(f"Hidden layers: {hidden_layers}")
 
             if not all([connection_id, dataset_id]):
                 return Response("Invalid data", status=status.HTTP_400_BAD_REQUEST)
                         
             # Get dataset data
             data_json = get_dataset_data(connection_id, dataset_id)
+            dataset_instance_json = get_dataset_instance(dataset_id)
+
+            # if data_json have more than 50000 data, sample
+            if len(data_json) > 50000:
+                print("Sampling data")
+                df = pd.DataFrame(data_json)
+                data_json = df.sample(n=50000).to_dict(orient='records')
             
-            features = ast.literal_eval(features)
-            target = ast.literal_eval(target)                                
-            if hidden_layers:
-                hidden_layers = ast.literal_eval(hidden_layers)
+            # if type(features) == str:
+            #     features = ast.literal_eval(features)
+            # if type(target) == str:
+            #     target = ast.literal_eval(target)
+
+            # convert ['1', '2', '3'] to [1, 2, 3]
+            hidden_layers = list(map(int, hidden_layers))
 
             # Convert epoch and batch_size to int
             epochs = int(epochs)
@@ -72,12 +98,15 @@ class MLModelViewSet(viewsets.ViewSet):
                 dataset_id=dataset_id,
                 epochs=epochs,
                 batch_size=batch_size,
+                timesteps=timesteps,
+                user_id=dataset_instance_json['user']
                                 
             )
             # update training status
             update_training_status(dataset_id, 'TRAINING')
             return Response("Training started", status=status.HTTP_200_OK)
         except Exception as e:
+            traceback.print_exc()
             update_training_status(dataset_id, 'UNTRAINED')
             return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
     

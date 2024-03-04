@@ -27,7 +27,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-BACKEND_HOST = '127.0.0.1:8000'
+BACKEND_HOST = os.environ.get('BACKEND_URL')
 
 ALLOWED_HOSTS = [
     '127.0.0.1','0.0.0.0'
@@ -87,13 +87,14 @@ ASGI_APPLICATION = 'ml_server.asgi.app'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'webanalytics_model_dev',
-        'USER': 'django_webanalytics_dev',
-        'PASSWORD': 'django098',
-        'HOST': '127.0.0.1', # For local development, use 'localhost' or '127.0.0.1'
-        'PORT': 5432, # Default PostgreSQL port is usually '5432' 
+        'NAME': os.environ.get('DATABASE_NAME'),
+        'USER': os.environ.get('DATABASE_USER'),
+        'PASSWORD': os.environ.get('DATABASE_PASSWORD'),
+        'HOST': os.environ.get('DATABASE_HOST'), # For local development, use 'localhost' or '127.0.0.1'
+        'PORT': os.environ.get('DATABASE_PORT'), # Default PostgreSQL port is usually '5432' 
     }
 }
+
 
 # DATABASES For Development
 # DATABASES = {
@@ -136,10 +137,7 @@ USE_I18N = True
 USE_TZ = True
 
 
-CORS_ALLOWED_ORIGINS = [
-    'http://127.0.0.1:8000'
-]
-
+CORS_ORIGIN_ALLOW_ALL = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
@@ -151,9 +149,18 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [(os.environ.get('REDIS_HOST'), os.environ.get('REDIS_PORT'))],
+        },
+    }
+}
 
-CELERY_BROKER_URL = 'redis://127.0.0.1:6379/2'
-CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/2'
+
+CELERY_BROKER_URL = f"redis://{os.environ.get('REDIS_HOST')}:{os.environ.get('REDIS_PORT')}/{os.environ.get('REDIS_DB')}"
+CELERY_RESULT_BACKEND = f"redis://{os.environ.get('REDIS_HOST')}:{os.environ.get('REDIS_PORT')}/{os.environ.get('REDIS_DB')}"
 
 
 CELERY_BEAT_SCHEDULE = {

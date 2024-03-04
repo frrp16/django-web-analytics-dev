@@ -30,7 +30,7 @@ class ScaleDataService:
             if self.scaling_method != None:
                 numeric_columns = df.select_dtypes(include=['float64', 'int64']).columns
                 scaled_df = df.copy()
-                scaled_df[numeric_columns] = pd.DataFrame(self.scaling_method.fit_transform(df[numeric_columns]), columns=numeric_columns)            
+                scaled_df[numeric_columns] = pd.DataFrame(self.scaling_method().fit_transform(df[numeric_columns]), columns=numeric_columns)            
             else:
                 return None
             return scaled_df

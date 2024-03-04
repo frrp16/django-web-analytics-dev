@@ -5,6 +5,14 @@ import { AuthContext } from '../../context/auth-context';
 import { getDatasetColumns } from '../../services/datasets.service';
 import { getPairSPJSON, getTSPlotJSON } from '../../services/visualization.service';
 
+function PlotBody(plotRendered){
+    return (
+        <div className={`${plotRendered ? 'grid grid-cols-3' : 'hidden'} h-full w-full justify-between mt-6`}>
+            <div id="plot" className="h-full w-full"></div>
+        </div>
+    );   
+}
+
 function Visualization(){
     // const array = fs.readFileSync('../assets/temp/BTC-USD.csv').toString().split('\r')
     const { currentUser, currentUserInformation, isGlobalLoading, setIsGlobalLoading } = useContext(AuthContext);
@@ -14,6 +22,8 @@ function Visualization(){
       label: '',
       value: null     
     });
+
+    const [plotRendered, setPlotRendered] = useState(false);
 
 
     const [selectedDatasetColumns, setSelectedDatasetColumns] = useState(JSON.parse(sessionStorage.getItem('datasetColumns')) || []); 
@@ -28,8 +38,9 @@ function Visualization(){
             const response = await getTSPlotJSON(selectedDataset.value.id, currentUser, selectedColumns);
             if (response.status === 200) {
                 const plotJSON = JSON.parse(response.data);
-                window.Bokeh.embed.embed_item(plotJSON);
+                window.Bokeh.embed.embed_item(plotJSON, 'plot');
             }  
+            setPlotRendered(true);
             setIsLoading(false);
         }      
         catch (error) {
@@ -45,8 +56,9 @@ function Visualization(){
             const response = await getPairSPJSON(selectedDataset.value.id, currentUser, selectedColumns);
             if (response.status === 200) {
                 const plotJSON = JSON.parse(response.data);
-                window.Bokeh.embed.embed_item(plotJSON);
+                window.Bokeh.embed.embed_item(plotJSON, 'plot');
             }  
+            setPlotRendered(true);
             setIsLoading(false);
         }      
         catch (error) {
@@ -58,19 +70,20 @@ function Visualization(){
        
     const handleDatasetChange = async () => {
       try {
-          if (selectedDataset.value !== null) {
-              setIsLoading(true);
-              const columnsResponse = await getDatasetColumns(selectedDataset.value.id, currentUser);
-              // make string from array of column names with comma separated
-              const col_test = [columnsResponse.data[0], columnsResponse.data[1], columnsResponse.data[2]]
-              const columnsString = col_test.map(column => column).join(',');
-            //   const dataResponse = await getAllDatasetsData(selectedDataset.value.id, currentUser, columnsString);
-              if (columnsResponse.status === 200) {
-                  setSelectedDatasetColumns(columnsResponse.data);  
-                //   setSelectedDatasetData(dataResponse.data);
-                  sessionStorage.setItem('datasetColumns', JSON.stringify(columnsResponse.data));                
-              }
-              setIsLoading(false);
+        if (selectedDataset.value !== null) {
+            setIsLoading(true);
+            const columnsResponse = await getDatasetColumns(selectedDataset.value.id, currentUser);
+            // make string from array of column names with comma separated
+            const col_test = [columnsResponse.data[0], columnsResponse.data[1], columnsResponse.data[2]]
+            const columnsString = col_test.map(column => column).join(',');
+            // const dataResponse = await getAllDatasetsData(selectedDataset.value.id, currentUser, columnsString);
+            if (columnsResponse.status === 200) {
+                setSelectedDatasetColumns(columnsResponse.data);  
+                // setSelectedDatasetData(dataResponse.data);
+                sessionStorage.setItem('datasetColumns', JSON.stringify(columnsResponse.data));                
+            }
+            setIsLoading(false);
+            // reload page            
           }
       } catch (error) {
           console.error(error);
@@ -79,29 +92,28 @@ function Visualization(){
       }
   }
 
-  useEffect(() => {
-    console.log('dataset change')
-    if (selectedDataset.value !== null) {
-        console.log(selectedDataset.value.id)
+  useEffect(() => {    
+    if (plotRendered){
+        setPlotRendered(false);
+        // window.location.reload();
+    }
+    if (selectedDataset.value !== null) {        
         handleDatasetChange();
     }
   }, [selectedDataset]);
 
   useEffect(() => {
     if (sessionStorage.getItem('datasetColumns') !== null) {
-        setSelectedDatasetColumns(JSON.parse(sessionStorage.getItem('datasetColumns')));
-        console.log(selectedDatasetColumns)
+        setSelectedDatasetColumns(JSON.parse(sessionStorage.getItem('datasetColumns')));        
     }
     // if (sessionStorage.getItem('datasetData') !== null) {
     //     setSelectedDatasetData(JSON.parse(sessionStorage.getItem('v_datasetData')));
     //     console.log(selectedDatasetData)
     // }
-}
-, []);     
+    } , []);     
 
     useEffect(() => {
-        setSelectedColumns(selectedColumns);
-        console.log('selectedColumns:106', selectedColumns);
+        setSelectedColumns(selectedColumns);        
     }
     , [selectedColumns]);
 
@@ -116,8 +128,7 @@ function Visualization(){
                     <Select
                         options={userDatasets.map(dataset => ({value: dataset, label: dataset.name}))}
                         onChange={(selectedOption) => {
-                          setSelectedDataset(selectedOption);
-                          console.log('selectedOption', selectedOption);
+                          setSelectedDataset(selectedOption);                          
                           if (selectedDataset.value !== null) {
                               handleDatasetChange();
                           }                                                                         
@@ -140,8 +151,7 @@ function Visualization(){
                             options={selectedDatasetColumns.map(column => ({value: column, label: column}))}
                             isMulti
                             onChange={(selectedOption) => {
-                                setSelectedColumns(selectedOption.map(option => option.value));
-                                console.log('selectedColumns:146', selectedColumns);
+                                setSelectedColumns(selectedOption.map(option => option.value));                                
                             }}  
                             placeholder="Select columns to plot"
                         /> 
@@ -161,11 +171,8 @@ function Visualization(){
                         <p>No data to plot</p>
                     </div>
                 )}
-                </div>
-                <div className='flex flex-row h-full w-full justify-between mt-6'> 
-                    <div id="time_series_plot" className='h-full w-full'></div>
-                    <div id="pair_scatter_plot" className='h-full w-full'></div>
-                </div>
+                </div>   
+                <PlotBody plotRendered={plotRendered}/>
             </div>
         </div>
     )

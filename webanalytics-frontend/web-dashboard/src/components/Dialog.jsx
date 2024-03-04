@@ -18,7 +18,7 @@ const DialogModal = ({
         }
     };
     return (
-        <Dialog open={open} onClose={handleClose}>
+        <Dialog open={open} onClose={handleClose} maxWidth='xl'>
             <DialogTitle>{header}</DialogTitle>
             <DialogContent>{children}</DialogContent>
             <DialogActions>

@@ -9,3 +9,4 @@ class DatasetMonitorLog(models.Model):
    dataset = models.CharField(max_length=255, null=True)
    row_count = models.IntegerField(default=0)
    column_count = models.IntegerField(default=0)   
+   unacknowledged_rows = models.IntegerField(default=0)

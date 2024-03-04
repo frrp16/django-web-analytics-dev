@@ -1,7 +1,7 @@
-import { useState, useContext } from "react"
+import { useState, useContext, useEffect } from "react"
 
 import { AuthContext } from '../../context/auth-context';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, set } from 'date-fns';
 
 import Select from 'react-select';
 import CachedIcon from '@mui/icons-material/Cached';
@@ -10,13 +10,79 @@ import AutoGraphIcon from '@mui/icons-material/AutoGraph';
 
 import { Tooltip } from '@mui/material';
 
-import { updateMonitorLog } from "../../services/datasets.service";
+import { updateMonitorLog, getDatasetColumns, getDatasetColumnsType } from "../../services/datasets.service";
+
+import { AddTrainingModel } from "./trainModel.prediction";
+import CustomizedSnackbars from "../../components/Snackbar";
 
 function Prediction(){
 
-    const { currentUser, currentUserInformation, isGlobalLoading, setIsGlobalLoading } = useContext(AuthContext);
+    const { currentUser, currentUserInformation } = useContext(AuthContext);
 
     const userDatasets = currentUserInformation ? currentUserInformation?.datasets : [];
+
+    const [selectedDataset, setSelectedDataset] = useState(null);
+    const [selectedDatasetColumns, setSelectedDatasetColumns] = useState(JSON.parse(sessionStorage.getItem('datasetColumns')) || []); 
+    const [selectedDatasetColumnsType, setSelectedDatasetColumnsType] = useState(JSON.parse(sessionStorage.getItem('datasetColumnsType')) || []);
+    
+    const [selectedPredictionDataset, setSelectedPredictionDataset] = useState(null);
+    const [showAddTrainingModelDialog, setShowAddTrainingModelDialog] = useState(false);
+    const [showRefreshSnackbar, setShowRefreshSnackbar] = useState(false);
+    
+    const handleDatasetChange = async () => {
+        try {
+            if (selectedDataset !== null) {                
+                const columnsResponse = await getDatasetColumns(selectedDataset.id, currentUser);
+                const columnsTypeResponse = await getDatasetColumnsType(selectedDataset.id, currentUser);
+                                                            
+                if (columnsResponse.status === 200 && columnsTypeResponse.status === 200) {
+                    setSelectedDatasetColumns(columnsResponse.data);   
+                    setSelectedDatasetColumnsType(columnsTypeResponse.data);                 
+                    sessionStorage.setItem('datasetColumns', JSON.stringify(columnsResponse.data));           
+                    sessionStorage.setItem('datasetColumnsType', JSON.stringify(columnsTypeResponse.data));     
+                }                
+            }
+        } catch (error) {
+            console.error(error);            
+            alert('Error fetching dataset columns and data');
+        }
+    }
+
+    const handlePredictonDatasetChange =  () => {
+        console.log(selectedPredictionDataset);
+    }
+
+    const handleRefreshDataset = async (dataset_id) => {
+        try {
+            const response = await updateMonitorLog(dataset_id, currentUser);
+            if (response.status === 200) {
+                setShowRefreshSnackbar(true);
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Error updating dataset monitor log');
+        }
+    }
+
+
+    useEffect(() => {        
+        if (selectedDataset !== null) {            
+            handleDatasetChange();
+        }
+      }, [selectedDataset]);
+
+    useEffect(() => {
+        if (selectedPredictionDataset !== null) {
+            handlePredictonDatasetChange();
+        }
+    }, [selectedPredictionDataset]);
+
+    useEffect(() => {
+        if (sessionStorage.getItem('datasetColumns') !== null) {
+            setSelectedDatasetColumns(JSON.parse(sessionStorage.getItem('datasetColumns')));      
+            setSelectedDatasetColumnsType(JSON.parse(sessionStorage.getItem('datasetColumnsType')));      
+        }
+    }, []);     
 
     return(
         <div>
@@ -78,7 +144,7 @@ function Prediction(){
                                                 <div className="flex flex-row gap-4">
                                                     
                                                 <Tooltip title="Refresh">
-                                                    <div onClick={() => updateMonitorLog(dataset.id, currentUser)}
+                                                    <div onClick={() => handleRefreshDataset(dataset.id)}
                                                     className="bg-green-500 text-white py-2.5 px-4 rounded-md cursor-pointer
                                                     hover:bg-green-300 hover:transition-colors duration-300">                                                            
                                                         <CachedIcon/>                                                            
@@ -91,7 +157,11 @@ function Prediction(){
                                                     </div>
                                                 </Tooltip>
                                                 <Tooltip title="Train Dataset">
-                                                    <div onClick={() => {console.log(dataset)}} 
+                                                    <div onClick={() => {       
+                                                        setSelectedDataset(dataset);                                                                                                                                                                  
+                                                        handleDatasetChange(dataset);
+                                                        setShowAddTrainingModelDialog(true);                                                    
+                                                    }} 
                                                         className="bg-blue-700 text-white py-2.5 px-4 rounded-md cursor-pointer
                                                         hover:bg-blue-400 hover:transition-colors duration-300">                                                            
                                                         <AutoGraphIcon/>                                                        
@@ -114,11 +184,8 @@ function Prediction(){
                             <Select
                                 options={userDatasets.map(dataset => ({value: dataset, label: dataset.name}))}
                                 onChange={(selectedOption) => {
-                                    setSelectedDataset(selectedOption);
-                                    console.log('selectedOption', selectedOption);
-                                    if (selectedDataset.value !== null) {
-                                        handleDatasetChange();
-                                    }                                                 
+                                    setSelectedPredictionDataset(selectedOption.value);
+                                    // handlePredictonDatasetChange();
                                 }}
                                 placeholder="Select a dataset"                        
                                 
@@ -128,6 +195,21 @@ function Prediction(){
 
                 </div>
             </div>
+            <AddTrainingModel
+                showAddTrainingModelDialog={showAddTrainingModelDialog}
+                setShowAddTrainingModelDialog={setShowAddTrainingModelDialog}
+                selectedDataset={selectedDataset}
+                selectedDatasetColumns={selectedDatasetColumns}
+                selectedDatasetColumnsType={selectedDatasetColumnsType}
+            />            
+            <CustomizedSnackbars
+                open={showRefreshSnackbar}
+                onClose={() => setShowRefreshSnackbar(false)}
+                severity="info"
+            >
+                Sending Refresh Signals
+            </CustomizedSnackbars>
+        
         </div>
     )
 }

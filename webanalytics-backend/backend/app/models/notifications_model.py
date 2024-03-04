@@ -6,14 +6,16 @@ import uuid
 class Notification(models.Model):     
     class NotificationType(models.TextChoices):
         INFO = 'INFO'
+        SUCCESS = 'SUCCESS'
         WARNING = 'WARNING'
         ERROR = 'ERROR'
     class ContextType(models.TextChoices):
         AUTH = 'AUTH'
-        CONNECTION = 'CONNECTION'        
+        CONNECTION = 'CONNECTION'
         DATASET = 'DATASET'
         TRAINING = 'TRAINING'
-        PREDICTION = 'PREDICTION'
+        PREDICTION = 'PREDICTION' 
+        MONITORING = 'MONITORING'
         OTHER = 'OTHER'    
     class Meta:
         ordering = ['-created_at']
