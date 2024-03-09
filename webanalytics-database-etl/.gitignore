@@ -1,0 +1,21 @@
+**/.venv/*
+
+**/tmp/*
+# all log files
+*.log
+
+# all __pycache__ directories
+**/__pycache__/*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.pyc
+*.env
