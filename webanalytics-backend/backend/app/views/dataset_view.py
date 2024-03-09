@@ -16,7 +16,7 @@ from ..models import Dataset, DatabaseConnection
 from ..serializers import DatasetSerializer, CreateDatasetSerializer
 from ..services import user_service
 
-from ..api import get_dataset_monitorlog, create_monitorlog, update_monitorlog
+from ..api import get_dataset_monitorlog, create_monitorlog, create_dataset_table, refresh_dataset_table
 
 
 import pandas as pd
@@ -36,6 +36,10 @@ class DatasetViewSet(viewsets.ViewSet):
             if request.user.is_staff:
                 queryset = Dataset.objects.all()
                 serializer = DatasetSerializer(queryset, many=True)
+                for dataset in serializer.data:                
+                    monitor_log = get_dataset_monitorlog(dataset['id'])
+                    # Add monitor log to serializer data
+                    dataset['monitor_log'] = monitor_log
                 return Response(serializer.data)   
                              
             user = user_service.get_user_from_token(request.headers.get('Authorization').split()[1])
@@ -56,17 +60,19 @@ class DatasetViewSet(viewsets.ViewSet):
             queryset = Dataset.objects.get(id=pk)            
             serializer = DatasetSerializer(queryset)
             # get dataset monitor log
-            monitor_log = get_dataset_monitorlog(queryset.id)        
-            serializer.data['monitor_log'] = monitor_log    
-            return Response(serializer.data)
+            # monitor_log = get_dataset_monitorlog(serializer.data["id"])   
+            # print('Monitor Log:', monitor_log)     
+            # serializer.data["monitor_log"] = monitor_log    
+            # print('Serializer:', serializer)
+            return Response(serializer.data) 
         
         user = user_service.get_user_from_token(request.headers.get('Authorization').split()[1])  
         queryset = Dataset.objects.filter(user=user.id)
         dataset = queryset.get(id=pk)
         serializer = DatasetSerializer(dataset)
-        # get dataset monitor log
-        monitor_log = get_dataset_monitorlog(dataset.id)        
-        serializer.data['monitor_log'] = monitor_log
+        # # get dataset monitor log
+        # monitor_log = get_dataset_monitorlog(serializer.data["id"])          
+        # serializer.data['monitor_log'] = monitor_log
         return Response(serializer.data)
     
     # # Create partial update method
@@ -112,33 +118,38 @@ class DatasetViewSet(viewsets.ViewSet):
 
         # Get data from database
         try:
-            # Build connection engine
-            engine = db_connection.engine_instance
-            # Read using pandas
-            df = pd.read_sql_table(table_name, con=engine)   
-            # Get column count and row count
-            column_count = len(df.columns)
-            row_count = len(df.index)
+            # # Build connection engine
+            # engine = db_connection.engine_instance
+            # # Read using pandas
+            # df = pd.read_sql_table(table_name, con=engine)   
+            # # Get column count and row count
+            # column_count = len(df.columns)
+            # row_count = len(df.index)
             
-            # Create a new Dataset instance       
+            # # Create a new Dataset instance       
             dataset_instance = Dataset(
                 name=name, description=description, table_name=table_name, 
                 user=User.objects.get(id=user_id), connection=db_connection,
             )
+
+            create_dataset_table(dataset_instance)
+
             # Create a new DatasetMonitorLog instance            
             dataset_instance.save()  
-            create_monitorlog(str(dataset_instance.id), row_count, column_count)            
-            monitor_log = get_dataset_monitorlog(str(dataset_instance.id))            
+            # create_monitorlog(str(dataset_instance.id), row_count, column_count)            
+            # monitor_log = get_dataset_monitorlog(str(dataset_instance.id))            
             # Serialize the Dataset instance
             serializer = DatasetSerializer(dataset_instance)
             # Add monitor log to serializer data
-            serializer.data['monitor_log'] = monitor_log
-            engine.dispose()
+            # serializer.data['monitor_log'] = monitor_log
+            # engine.dispose()
             # get dataset monitor lo
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except Exception as e:
             print('Error:', e)
             return Response("Internal Server Error", status=500)
+    
+    
         
     @action(detail=True, methods=['GET'], url_path='columns')
     def get_dataset_columns(self, request, pk=None):        
@@ -219,6 +230,7 @@ class DatasetViewSet(viewsets.ViewSet):
                 else:
                     df = df.sort_values(by=[column], ascending=False)                                 
             paginator = self.pagination_class()
+            total_pages = math.ceil(len(df) / paginator.page_size)
             # get page_size from query params if exists
             page_size = request.query_params.get('page_size')
             if page_size:
@@ -226,43 +238,16 @@ class DatasetViewSet(viewsets.ViewSet):
             
             p = paginator.paginate_queryset(df.to_dict(orient='records'), request)  
             paginated_data = paginator.get_paginated_response(p)
+            paginated_data.data['total_pages'] = total_pages
             return Response(paginated_data.data, status=status.HTTP_200_OK)
         except Exception as e:
             print('Error:', e)
             return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-    @action(detail=True, methods=['GET'], url_path='pages_count')
-    def get_pages_count(self, request, pk=None):
-        sample = request.query_params.get('sample')  
-        try:
-            user = user_service.get_user_from_token(request.headers.get('Authorization').split()[1])
-            df = Dataset.objects.filter(user=user.id).get(id=pk).get_dataset_data()       
-            if sample == 'true':
-                if len(df) > 5000:
-                    df = df.sample(5000, replace=False, random_state=1).sort_index()                             
-            paginator = self.pagination_class()
-            # get page_size from query params if exists
-            page_size = request.query_params.get('page_size')
-            if page_size:
-                paginator.page_size = int(page_size)                
-            total_pages = math.ceil(len(df) / paginator.page_size)
-            return Response(total_pages, status=status.HTTP_200_OK)
-        except Exception as e:
-            print('Error:', e)
-            return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
-    @action(detail=True, methods=['GET'], url_path='plot_type')
-    def get_dataset_plot_type(self, request, pk=None):
-        try:
-            plot_type = Dataset.objects.get(id=pk).get_dataset_plot_type()            
-            return Response(plot_type, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-    @action(detail=True, methods=['GET'], url_path='monitor')
-    def monitor_dataset(self, request, pk=None):
+    @action(detail=True, methods=['GET'], url_path='refresh')
+    def refresh_dataset(self, request, pk=None):
         try:                    
-            monitor_log = update_monitorlog(pk)
-            return Response(monitor_log, status=status.HTTP_200_OK)
+            response = refresh_dataset_table(dataset_id=pk)
+            return Response(response, status=status.HTTP_200_OK)
         except Exception as e:
             return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)   

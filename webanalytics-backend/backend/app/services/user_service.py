@@ -43,9 +43,7 @@ def get_user_serialize(request):
     token = request.headers.get('Authorization').split()[1]
     try:
         user_instance = get_user_from_token(token)
-        serializer = UserSerializer(user_instance)
-        for datasets in serializer.data['datasets']:
-            datasets['monitor_logs'] = get_dataset_monitorlog(datasets['id'])                            
+        serializer = UserSerializer(user_instance)                         
         return serializer.data
     except Exception as e:
         raise Exception(e)

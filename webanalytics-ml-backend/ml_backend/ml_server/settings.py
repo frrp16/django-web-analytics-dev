@@ -163,9 +163,9 @@ CELERY_BROKER_URL = f"redis://{os.environ.get('REDIS_HOST')}:{os.environ.get('RE
 CELERY_RESULT_BACKEND = f"redis://{os.environ.get('REDIS_HOST')}:{os.environ.get('REDIS_PORT')}/{os.environ.get('REDIS_DB')}"
 
 
-CELERY_BEAT_SCHEDULE = {
-    'monitor_dataset' :{
-        'task': 'ml_app.tasks.monitorlog_task.monitor_dataset',
-        'schedule': timedelta(seconds=20)
-    },
-}
+# CELERY_BEAT_SCHEDULE = {
+#     'monitor_dataset' :{
+#         'task': 'ml_app.tasks.monitorlog_task.monitor_dataset',
+#         'schedule': timedelta(seconds=20)
+#     },
+# }

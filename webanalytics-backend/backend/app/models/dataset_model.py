@@ -7,8 +7,23 @@ from .connection_model import DatabaseConnection
 import uuid
 import pandas as pd
 import json 
+import dotenv
+import os
+
+dotenv.load_dotenv()
 
 from sqlalchemy import create_engine, URL, text
+
+database_etl_url = URL.create(
+    drivername='postgresql',
+    username=os.getenv('WAREHOUSE_DATABASE_USER'),
+    password=os.getenv('WAREHOUSE_DATABASE_PASSWORD'),
+    host=os.getenv('WAREHOUSE_DATABASE_HOST'),
+    port=os.getenv('WAREHOUSE_DATABASE_PORT'),
+    database=os.getenv('WAREHOUSE_DATABASE_NAME')
+)
+
+database_etl_engine = create_engine(database_etl_url)
 
 class Dataset(models.Model):
     class DatasetStatus(models.TextChoices):
@@ -34,30 +49,32 @@ class Dataset(models.Model):
             if df is not None:
                 return df
             else:
-                engine = self.connection.engine_instance
-                df = pd.read_sql_table(self.table_name, con=engine)
+                engine = database_etl_engine
+                df = pd.read_sql_table(str(f"{self.connection.database}_{self.table_name}"), con=engine) 
                 cache.set(f'dataset_{self.id}_data', df)
                 engine.dispose()
                 return df 
         except Exception as e:
             raise Exception(e)
     
-    def get_dataset_columns(self, use_cache=False):
-        try:            
-            if use_cache:                
-                columns = cache.get(f'dataset_{self.id}_columns')
-                if columns is not None:
-                    return columns   
-            conn = self.connection.connect()
-            query = text("SELECT column_name as column FROM information_schema.columns WHERE table_name = :x").bindparams(x=f"{self.table_name}")  
-            cursor = conn.execute(query)
-            conn.close()  
-            self.connection.disconnect()     
-            columns = [item['column'] for item in cursor.mappings().all()]
-            cache.set(f'dataset_{self.id}_columns', columns)  
-            return columns
-        except Exception as e:
-            raise Exception(e)
+    # def get_dataset_columns(self, use_cache=False):
+    #     try:            
+    #         if use_cache:                
+    #             columns = cache.get(f'dataset_{self.id}_columns')
+    #             if columns is not None:
+    #                 return columns   
+    #         conn = database_etl_engine.connect()
+    #         query = text(
+    #             "SELECT column_name as column FROM information_schema.columns WHERE table_name = :x"
+    #             ).bindparams(x=f"{self.connection.database}_{self.table_name}")  
+    #         cursor = conn.execute(query)
+    #         conn.close()  
+    #         self.connection.disconnect()     
+    #         columns = [item['column'] for item in cursor.mappings().all()]
+    #         cache.set(f'dataset_{self.id}_columns', columns)  
+    #         return columns
+    #     except Exception as e:
+    #         raise Exception(e)
         
     def get_dataset_columns_type(self, use_cache=False):
         try:
@@ -78,9 +95,9 @@ class Dataset(models.Model):
                 row_count = cache.get(f'dataset_{self.id}_row_count')
                 if row_count is not None:
                     return row_count  
-            engine = self.connection.engine_instance
+            engine = database_etl_engine
             conn = engine.connect()
-            query = text(f"SELECT COUNT(*) FROM {self.table_name}")
+            query = text(f"SELECT COUNT(*) FROM {self.connection.database}_{self.table_name}")
             cursor = conn.execute(query)
             conn.close()
             self.connection.disconnect()

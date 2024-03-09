@@ -9,10 +9,11 @@ from rest_framework_simplejwt.tokens import AccessToken
 from ..models import DatabaseConnection
 from ..serializers import DatabaseConnectionSerializer
 from ..services import user_service
+from ..api import create_connection
 
 
 class DatabaseConnectionViewSet(viewsets.ViewSet):
-    ppermission_classes = [permissions.IsAuthenticated | permissions.IsAdminUser]    
+    permission_classes = [permissions.IsAuthenticated | permissions.IsAdminUser]    
     authentication_classes = [JWTAuthentication, BasicAuthentication]
     serializer_class = DatabaseConnectionSerializer
 
@@ -54,7 +55,7 @@ class DatabaseConnectionViewSet(viewsets.ViewSet):
 
         # test connection
         try:
-            db_instance.connect()
+            create_connection(db_instance)
             db_instance.save()
             serializer = DatabaseConnectionSerializer(db_instance)
             return Response(serializer.data, status=status.HTTP_201_CREATED)

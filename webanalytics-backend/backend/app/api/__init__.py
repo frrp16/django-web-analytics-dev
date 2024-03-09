@@ -1,2 +1,4 @@
-from .monitorlog_api import create_monitorlog, get_dataset_monitorlog, update_monitorlog
+from .monitorlog_api import create_monitorlog, get_dataset_monitorlog
 from .mlmodel_api import get_model_by_dataset_id, get_model_summary
+from .connection_api import create_connection
+from .dataset_table_api import create_dataset_table, refresh_dataset_table 

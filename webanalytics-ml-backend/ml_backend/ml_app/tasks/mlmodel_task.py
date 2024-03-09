@@ -9,6 +9,8 @@ from ..services.preprocess_service import ScaleDataService, CleanDataService
 from ..services.dataset_service import update_training_status
 from ..services.notification_service import create_notification
 
+from ..models import MLModel
+
 from celery.exceptions import MaxRetriesExceededError
 import traceback
 
@@ -92,10 +94,7 @@ def train_model(
                     timesteps=timesteps if timesteps else 5
                 )
             case _:
-                raise Exception("Invalid algorithm")
-                 
-        X_pd = X
-        y_pd = y
+                raise Exception("Invalid algorithm")                
 
         # logger.warn(f"X_pd type: {type(X_pd)}")
         # logger.warn(f"y_pd type: {type(y_pd)}")   
@@ -103,7 +102,7 @@ def train_model(
         # logger.warn(f"X_pd: {X_pd.head()}")
         # logger.warn(f"y_pd: {y_pd.head()}")                
 
-        model.train(X_pd.values.astype('float32'), y_pd.values.astype('float32'), epochs, batch_size)                      
+        model.train(X.values.astype('float32'), y.values.astype('float32'), epochs, batch_size)                      
 
         logger.warn(f"{algorithm} model training completed for dataset {dataset_id}")   
         # Save the model
@@ -132,5 +131,24 @@ def train_model(
                 "ERROR",
                 'TRAINING'
                 )
+            logger.error("Max retries exceeded. Task failed.")
+        return False
+    
+
+@shared_task(bind=True)
+def predict(self, model_id, data_predict):
+    try:
+        logger.warn(f"Predicting with model {model_id}")
+        model = MLModel.objects.get(id=model_id)
+        df_predict = pd.DataFrame(data_predict)[model.features.split(',')]
+
+        data_predict = pd.DataFrame(data_predict)
+        prediction = model.predict(data_predict)
+        return prediction
+    except Exception as e:
+        logger.error(str(e))
+        try:
+            self.retry(countdown=5)
+        except MaxRetriesExceededError:
             logger.error("Max retries exceeded. Task failed.")
         return False

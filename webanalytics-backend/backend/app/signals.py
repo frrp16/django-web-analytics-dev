@@ -16,10 +16,10 @@ def create_notification(sender, instance, created, **kwargs):
 
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
-            f"notification_{instance.user.username}",
+            f"notification_{instance.user.id}",
             {
                 "type": "send_notification",
-                "notification": {
+                "notification": {   
                     "title": instance.title,
                     "message": instance.message,
                     "type": instance.type,

@@ -12,7 +12,7 @@ from django.utils import timezone
 
 logger = get_task_logger(__name__)
     
-@shared_task(bind=True, max_retries=10, soft_time_limit=300, time_limit=1500)
+@shared_task(bind=True, max_retries=5, time_limit=300)
 def monitor_dataset(self):
     try:
         print("Run monitor_dataset task")
@@ -22,34 +22,20 @@ def monitor_dataset(self):
         for log in last_monitor_logs:
             # check if last monitor log is 5 minutes old or more, if yes, update monitor log
             if (timezone.now() - log.timestamp).seconds > 300:
-                logger.info(f"Updating monitor log for dataset {log.dataset}")
-                # get dataset                
-                dataset = log.dataset
-                dataset_instance = get_dataset_instance(dataset_id=dataset)
-                # create new monitor log            
+                logger.info(f"Updating monitor log for dataset {log.dataset}")                
+                dataset = log.dataset                                
                 row_count = get_dataset_row_count(dataset)
                 column_count = len(get_dataset_columns(dataset))
-                monitor_log = DatasetMonitorLog(dataset=dataset, row_count=row_count, column_count=column_count)
-                # Get last monitor log in order to compare
+                monitor_log = DatasetMonitorLog(dataset=dataset, row_count=row_count, column_count=column_count)                
                 last_monitor_log = DatasetMonitorLog.objects.filter(dataset=dataset).order_by('-timestamp').first()
-                # if row count or column count is different from last monitor log, update monitor log
+
                 if last_monitor_log.row_count != row_count or last_monitor_log.column_count != column_count:
-                    monitor_log.save()
-                    # get dataset instance and update status
-                    status = 'CHANGED'   
-                    update_dataset_change_status(dataset, status)        
-                    create_notification(
-                        "Monitor Log", 
-                        dataset_instance["user"], 
-                        f"Monitor log for dataset '{dataset_instance['name']}' updated, Dataset status changed.", 
-                        "INFO",
-                        'MONITORING'
-                        )              
-                    logger.info(f"Monitor log for dataset {dataset} updated, Dataset status changed.")
+                    monitor_log.save()                    
+                    change_dataset_status.delay(dataset, 'CHANGED')
                 else:                    
                     last_monitor_log.timestamp = timezone.now()
                     last_monitor_log.save(update_fields=['timestamp'])
-                    logger.info(f"Monitor log for dataset {dataset} is up to date.")
+                    change_dataset_status.delay(dataset, 'STABLE')
         return True
     except Exception as e:
         logger.error(f"An error occurred: {str(e)}")
@@ -63,56 +49,65 @@ def monitor_dataset(self):
 @shared_task(bind=True, max_retries=10, soft_time_limit=300, time_limit=1500)
 def monitor_single_dataset(self, dataset_id):
     try:
-        logger.info(f"Monitoring dataset {dataset_id}...")
-        # get last updated monitor log per dataset
-        last_monitor_log = DatasetMonitorLog.objects.filter(dataset=dataset_id).order_by('-timestamp').first()
-        # check if last monitor log is 5 minutes old or more, if yes, update monitor log        
-        logger.info(f"Updating monitor log for dataset {dataset_id}")
-        # get dataset                
-        dataset_instance = get_dataset_instance(dataset_id=dataset_id)
-        # create new monitor log            
+        print("Run monitor_single_dataset task")
+        logger.info(f"Monitoring dataset {dataset_id}...")        
+        last_monitor_log = DatasetMonitorLog.objects.filter(dataset=dataset_id).order_by('-timestamp').first()  
+                   
+        logger.info(f"Updating monitor log for dataset {dataset_id}")                        
         row_count = get_dataset_row_count(dataset_id)
         column_count = len(get_dataset_columns(dataset_id))
         monitor_log = DatasetMonitorLog(dataset=dataset_id, row_count=row_count, column_count=column_count)
-        # if row count or column count is different from last monitor log, update monitor log
+        
         if last_monitor_log.row_count != row_count or last_monitor_log.column_count != column_count:
             monitor_log.unacknowledged_rows = row_count - last_monitor_log.row_count
             monitor_log.save()
-            # get the difference in row count            
-            # get dataset instance and update status
-            status = 'CHANGED'   
-            update_dataset_change_status(dataset_id, status)        
-            create_notification(
-                "Monitor Log", 
-                dataset_instance["user"], 
-                f"Monitor log for dataset '{dataset_instance['name']}' updated, Dataset status changed.", 
-                "INFO",
-                'MONITORING'
-                )              
-            logger.info(f"Monitor log for dataset {dataset_id} updated, Dataset status changed.")
+            change_dataset_status.delay(dataset_id, 'CHANGED')
         else:                    
             last_monitor_log.timestamp = timezone.now()
             last_monitor_log.save(update_fields=['timestamp'])
-            create_notification(
-                "Monitor Log", 
-                dataset_instance["user"], 
-                f"Monitor log for dataset '{dataset_instance['name']}' is up to date.", 
-                "INFO",
-                'MONITORING'
-                )
-            logger.info(f"Monitor log for dataset {dataset_id} is up to date.")
+            change_dataset_status.delay(dataset_id, 'STABLE', True)
         return True
     except Exception as e:
         logger.error(f"An error occurred: {str(e)}")
         try:
             self.retry(countdown=5)
         except MaxRetriesExceededError:
+            change_dataset_status.delay(dataset_id, 'ERROR')
+        return False
+
+
+@shared_task(bind=True)
+def change_dataset_status(self, dataset_id, status, manual=False):        
+    dataset_instance = get_dataset_instance(dataset_id=dataset_id)
+    if status == 'CHANGED':
+        update_dataset_change_status(dataset_id, status)        
+        create_notification(
+            "Monitor Log", 
+            dataset_instance["user"], 
+            f"Monitor log for dataset '{dataset_instance['name']}' updated, Dataset status changed.", 
+            "INFO",
+            'MONITORING'
+            )              
+        logger.warn(f"Monitor log for dataset {dataset_id} updated, Dataset status changed.")
+
+    elif status == 'STABLE':
+        if manual:
             create_notification(
+                    "Monitor Log", 
+                    dataset_instance["user"], 
+                    f"Monitor log for dataset '{dataset_instance['name']}' is up to date.", 
+                    "INFO",
+                    'MONITORING'
+                    )
+        logger.info(f"Monitor log for dataset {dataset_id} is up to date.")
+
+    elif status == 'ERROR':
+        create_notification(
                 "Monitor Log", 
                 dataset_instance["user"], 
                 f"Monitor log for dataset '{dataset_instance['name']}' failed to update.", 
                 "ERROR",
                 'MONITORING'
             )
-            logger.error("Max retries exceeded. Task failed.")
-        return False
+        logger.error("Max retries exceeded. Task failed.")
+    return True
