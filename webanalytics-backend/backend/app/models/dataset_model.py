@@ -50,10 +50,14 @@ class Dataset(models.Model):
                 return df
             else:
                 engine = database_etl_engine
-                df = pd.read_sql_table(str(f"{self.connection.database}_{self.table_name}"), con=engine) 
-                cache.set(f'dataset_{self.id}_data', df)
-                engine.dispose()
-                return df 
+                # if database table is exist
+                if engine.dialect.has_table(engine.connect(), f"{self.connection.database}_{self.table_name}"):
+                    df = pd.read_sql_table(str(f"{self.connection.database}_{self.table_name}"), con=engine) 
+                    cache.set(f'dataset_{self.id}_data', df)
+                    engine.dispose()
+                    return df
+                else:                    
+                    return False
         except Exception as e:
             raise Exception(e)
     
@@ -82,8 +86,12 @@ class Dataset(models.Model):
                 columns_type = cache.get(f'dataset_{self.id}_columns_type')
                 if columns_type is not None:
                     return columns_type
+            
             df = self.get_dataset_data()
-            columns_type = df.dtypes.astype(str).to_dict()
+            if df is False:
+                return False
+            columns_type_dict = df.dtypes.astype(str).to_dict()
+            columns_type = [{"column": column, "type": dtype} for column, dtype in columns_type_dict.items()]
             cache.set(f'dataset_{self.id}_columns_type', columns_type)             
             return columns_type
         except Exception as e:

@@ -11,13 +11,14 @@ import AutoGraphIcon from '@mui/icons-material/AutoGraph';
 import { Tooltip } from '@mui/material';
 
 import { updateMonitorLog, getDatasetColumns, getDatasetColumnsType } from "../../services/datasets.service";
+import { getTrainingModels } from "../../services/prediction.service";
 
 import { AddTrainingModel } from "./trainModel.prediction";
 import CustomizedSnackbars from "../../components/Snackbar";
 
 function Prediction(){
 
-    const { currentUser, currentUserInformation } = useContext(AuthContext);
+    const { currentUser, currentUserInformation, isGlobalLoading, setIsGlobalLoading } = useContext(AuthContext);
 
     const userDatasets = currentUserInformation ? currentUserInformation?.datasets : [];
 
@@ -28,6 +29,8 @@ function Prediction(){
     const [selectedPredictionDataset, setSelectedPredictionDataset] = useState(null);
     const [showAddTrainingModelDialog, setShowAddTrainingModelDialog] = useState(false);
     const [showRefreshSnackbar, setShowRefreshSnackbar] = useState(false);
+
+    const [datasetModel, setDatasetModel] = useState([])
     
     const handleDatasetChange = async () => {
         try {
@@ -48,8 +51,22 @@ function Prediction(){
         }
     }
 
-    const handlePredictonDatasetChange =  () => {
-        console.log(selectedPredictionDataset);
+    const handlePredictonDatasetChange = async  () => {
+        try {
+            // setIsGlobalLoading(true);
+            if (selectedPredictionDataset !== null) {
+                const response = await getTrainingModels(selectedPredictionDataset.id, currentUser);
+                if (response.status === 200) {
+                    setDatasetModel(response.data);
+                    console.log(datasetModel);
+                }
+            }
+            // setIsGlobalLoading(false);
+        } catch (error) {
+            console.error(error);
+            alert('Error fetching dataset training models');
+            // setIsGlobalLoading(false);
+        }
     }
 
     const handleRefreshDataset = async (dataset_id) => {
@@ -64,6 +81,10 @@ function Prediction(){
         }
     }
 
+    useEffect(() => {
+        setDatasetModel(datasetModel);
+    }, [datasetModel]);
+
 
     useEffect(() => {        
         if (selectedDataset !== null) {            
@@ -73,7 +94,7 @@ function Prediction(){
 
     useEffect(() => {
         if (selectedPredictionDataset !== null) {
-            handlePredictonDatasetChange();
+            handlePredictonDatasetChange();            
         }
     }, [selectedPredictionDataset]);
 
@@ -180,21 +201,70 @@ function Prediction(){
                     <div className="font-bold font-['Montserrat'] my-4">
                         Prediction
                     </div>
-                        <div className="flex flex-row items-center">
+                        <div className="flex flex-col gap-4 ">
                             <Select
                                 options={userDatasets.map(dataset => ({value: dataset, label: dataset.name}))}
                                 onChange={(selectedOption) => {
                                     setSelectedPredictionDataset(selectedOption.value);
-                                    // handlePredictonDatasetChange();
+                                    handlePredictonDatasetChange();
                                 }}
                                 placeholder="Select a dataset"                        
                                 
-                            />                
+                            />      
+                            {datasetModel.length > 0 ? (
+                                <table className=' text-left overflow-clip rounded-lg min-w-fit w-full'>
+                                    <thead className='bg-slate-900'>
+                                        <tr>
+                                            <th colSpan={6} className='border-b text-white border-blue-gray-100
+                                                bg-blue-gray-50 p-4 text-sm'>
+                                                Training Models:
+                                            </th>                                                  
+                                        </tr>                                            
+                                    </thead>    
+                                    <thead>
+                                        <tr>
+                                            <th className='border border-blue-gray-100 px-4 py-2 text-sm text-center'>Name</th>
+                                            <th className='border border-blue-gray-100 px-4 py-2 text-sm text-center'>Algorithm</th>
+                                            <th className='border border-blue-gray-100 px-4 py-2 text-sm text-center'>Features</th>
+                                            <th className='border border-blue-gray-100 px-4 py-2 text-sm text-center'>Target</th>  
+                                            <th className='border border-blue-gray-100 px-4 py-2 text-sm text-center'>Created At</th>          
+                                            <th className='border border-blue-gray-100 px-4 py-2 text-sm text-center'>Action</th>                                                
+                                        </tr>
+                                    </thead>  
+                                    <tbody>
+                                        {datasetModel.map((model, index) => (
+                                            <tr key={index}>
+                                                <td className='border border-blue-gray-100 px-4 py-2 text-sm'>{model.name}</td>
+                                                <td className='border border-blue-gray-100 px-4 py-2 text-sm'>{model.algorithm}</td>
+                                                <td className='border border-blue-gray-100 px-4 py-2 text-sm'>
+                                                    {model.features}
+                                                </td>
+                                                <td className='border border-blue-gray-100 px-4 py-2 text-sm'>{model.target}</td>
+                                                <td className='border border-blue-gray-100 px-4 py-2 text-sm'>
+                                                    {model.created_at}
+                                                </td>
+                                                <td className='border border-blue-gray-100 px-4 py-2 text-sm'>
+                                                    <div className="flex flex-row gap-4">
+                                                        <Tooltip title="Train Model">
+                                                            <div className="bg-blue-700 text-white py-2.5 px-4 rounded-md cursor-pointer
+                                                            hover:bg-blue-400 hover:transition-colors duration-300">                                                            
+                                                                <AutoGraphIcon/>                                                        
+                                                            </div>
+                                                        </Tooltip> 
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+
+                            ) : null}
                         </div>
                     </div>
 
                 </div>
             </div>
+
             <AddTrainingModel
                 showAddTrainingModelDialog={showAddTrainingModelDialog}
                 setShowAddTrainingModelDialog={setShowAddTrainingModelDialog}

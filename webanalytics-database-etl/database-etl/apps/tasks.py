@@ -6,13 +6,14 @@ from django.utils import timezone
 
 from .models import DatasetTable, DatasetMonitorLog
 
-from .api import create_notification
+from .api import create_notification, get_dataset_instance
 
 @shared_task(bind=True, max_retries=5)
 def load_data_task(self, dataset_table_id):
     logger = get_task_logger(__name__)
     try:        
         dataset_table = DatasetTable.objects.get(pk=dataset_table_id)
+        dataset_instance = get_dataset_instance(dataset_table_id)
         dataset_data = dataset_table.extract_data()
         dataset_table.load_data(dataset_data)
         row_count = len(dataset_data)
@@ -25,6 +26,13 @@ def load_data_task(self, dataset_table_id):
             dataset_table=dataset_table, row_count=row_count, column_count=column_count
         )
         dataset_monitor_log.save()        
+        create_notification(
+            title="Dataset Load Success",
+            message=f"Dataset {dataset_table.table_name} loaded successfully. {row_count} rows and {column_count} columns loaded.",
+            context="DATASET",
+            type="SUCCESS",
+            user=dataset_instance["user"]
+        )
         return f"Dataset {dataset_table.table_name} loaded successfully. {row_count} rows and {column_count} columns loaded."
     except Exception as e:
         logger.error(e)
@@ -32,6 +40,13 @@ def load_data_task(self, dataset_table_id):
             self.retry(countdown=5, exc=e)
         except MaxRetriesExceededError:
             logger.error("Max retries exceeded. Task failed.")
+            create_notification(
+            title="Dataset Load Failed",
+            message=f"Dataset {dataset_table.table_name} loaded failed. {str(e)}",
+            context="DATASET",
+            type="ERROR",
+            user=dataset_instance["user"]
+        )
             return False
 
 @shared_task(bind=True)
@@ -40,6 +55,7 @@ def periodic_load_all_data(self):
     try:
         dataset_tables = DatasetTable.objects.all()
         for dataset_table in dataset_tables:
+            logger.warn(f"Load datase {dataset_table.table_name} from database {dataset_table.connection.database}.")
             if dataset_table.date_updated < timezone.now() - timezone.timedelta(days=1):
                 load_data_task.delay(dataset_table.id)                
         return True

@@ -9,7 +9,11 @@ class DatasetSerializer(serializers.ModelSerializer):
     monitor_log = serializers.SerializerMethodField()
     
     def get_columns(self, obj):
-        return obj.get_dataset_columns_type()
+        col =  obj.get_dataset_columns_type()
+        if col:
+            return col
+        else:
+            return []
     def get_models(self, obj):
         try:
             return get_model_by_dataset_id(obj.id)            

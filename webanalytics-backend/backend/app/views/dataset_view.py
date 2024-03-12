@@ -18,7 +18,7 @@ from ..services import user_service
 
 from ..api import get_dataset_monitorlog, create_monitorlog, create_dataset_table, refresh_dataset_table
 
-
+import traceback
 import pandas as pd
 import math
 
@@ -132,19 +132,18 @@ class DatasetViewSet(viewsets.ViewSet):
                 user=User.objects.get(id=user_id), connection=db_connection,
             )
 
-            create_dataset_table(dataset_instance)
+            create_dataset_table(dataset_instance)            
 
             # Create a new DatasetMonitorLog instance            
             dataset_instance.save()  
             # create_monitorlog(str(dataset_instance.id), row_count, column_count)            
             # monitor_log = get_dataset_monitorlog(str(dataset_instance.id))            
-            # Serialize the Dataset instance
-            serializer = DatasetSerializer(dataset_instance)
+            # Serialize the Dataset instance            
             # Add monitor log to serializer data
             # serializer.data['monitor_log'] = monitor_log
             # engine.dispose()
             # get dataset monitor lo
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(f"Dataset {dataset_instance.name} created", status=status.HTTP_201_CREATED)
         except Exception as e:
             print('Error:', e)
             return Response("Internal Server Error", status=500)
@@ -241,7 +240,7 @@ class DatasetViewSet(viewsets.ViewSet):
             paginated_data.data['total_pages'] = total_pages
             return Response(paginated_data.data, status=status.HTTP_200_OK)
         except Exception as e:
-            print('Error:', e)
+            traceback.print_exc()
             return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
     @action(detail=True, methods=['GET'], url_path='refresh')

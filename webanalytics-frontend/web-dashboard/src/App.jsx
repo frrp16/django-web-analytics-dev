@@ -15,15 +15,18 @@ import Register from './pages/Register';
 import { AuthContext } from './context/auth-context';
 
 function App() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const { currentUser, isGlobalLoading } = useContext(AuthContext)
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+
+
 
   const ProtectedRoute = ({ children }) => {    
     if(!currentUser){
       return <Navigate to='/login' />;
     }
     else{
+      
       return children;
     }
   }
@@ -37,14 +40,15 @@ function App() {
               <div class="border-t-transparent border-solid animate-spin rounded-full border-blue-500 border-8 h-32 w-32"></div>
             </div>
       )}
-        <Navbar toggleSidebar={toggleSidebar}  />  
+        <Navbar />  
         <div className='w-screen h-[70px]'></div>
-        <div className='flex'>
+        <div className='flex flex-row'>
           <Sidebar isOpen={isSidebarOpen} />
+          <div className='min-w-64'></div>
           <div
-            // className={`overflow-auto px-6 pb-2 ${isSidebarOpen ? 'translate-x-64' : 'translate-x-0'} min-w-[200px]`}
-            className={`overflow-auto pb-2 min-w-[200px] px-6 w-full transition-transform duration-500 ease-in-out ${isSidebarOpen ? 'translate-x-64' : 'translate-x-0'}`}            
-            style={{ width: isSidebarOpen ? 'calc(100% - 256px)' : '100%'}}
+            className={`overflow-auto px-6 pb-2 w-full min-w-[200px]`}
+            // className={`overflow-auto pb-2 min-w-[200px] px-6 w-full transition-transform duration-500 ease-in-out ${isSidebarOpen ? 'translate-x-64' : 'translate-x-0'}`}            
+            // style={{ width: isSidebarOpen ? 'calc(100% - 256px)' : '100%'}}
           >
             <Outlet />
           </div>

@@ -6,4 +6,4 @@ class DatabaseConnectionSerializer(serializers.ModelSerializer):
         model = DatabaseConnection
         fields = '__all__'
         
-        extra_kwargs = {'password': {'write_only': True}, 'user': {'write_only': True}} 
+        extra_kwargs = { 'user': {'write_only': True}} 

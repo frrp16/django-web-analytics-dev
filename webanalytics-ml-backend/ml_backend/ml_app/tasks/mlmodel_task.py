@@ -2,11 +2,13 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 
 import pandas as pd
+import numpy as np
+import dotenv
+import ast
 
 from celery.exceptions import MaxRetriesExceededError
-from ..services.ml_service import MultilayerPerceptron, LSTM
-from ..services.preprocess_service import ScaleDataService, CleanDataService
-from ..services.dataset_service import update_training_status
+from ..services.preprocess_service import CleanDataService, ScaleDataService
+from ..services.dataset_service import get_dataset_data, update_training_status, get_dataset_instance
 from ..services.notification_service import create_notification
 
 from ..models import MLModel
@@ -16,139 +18,93 @@ import traceback
 
 logger = get_task_logger(__name__)
 
-# Create celery task to train machine learning model
+
+
 @shared_task(bind=True)
-def train_model(
-    self, 
-    name,
-    dataset, 
-    features: list, 
-    target: list,   
-    scaler: str | None, 
-    algorithm: str,
-    task: str,
-    hidden_layers: list | None,
-    dataset_id: str,
-    epochs: int,
-    batch_size: int,  
-    timesteps: int | None,
-    user_id    
-    ):
+def train_model(self, models_id):
     try:
-        logger.warn(f"Training model on dataset {dataset_id}")
-        # logger.warn(pd.DataFrame(dataset).head())
-        # Clean dataset
+        model_instance = MLModel.objects.get(id=models_id)
+        logger.warn(f"Training model {model_instance.name} on dataset {str(model_instance.dataset)}")
+
+        # Get dataset data
+        logger.warn(f"Getting dataset {str(model_instance.dataset)} data...")
+        df = pd.DataFrame(get_dataset_data(model_instance.dataset))
+        dataset_instance = get_dataset_instance(model_instance.dataset)
+
+        # Merge features and target array
+        logger.warn(f"Processing dataset {str(model_instance.dataset)}...")
+        features_list = ast.literal_eval(model_instance.features)
+        target_list = ast.literal_eval(model_instance.target)
+
+        columns = list(set(features_list + target_list))
+        df = df[columns]
+
+        # Clean dataset 
+        logger.warn(f"Cleaning dataset {str(model_instance.dataset)}...")
         clean_data_service = CleanDataService()
-        preprocessed_df = clean_data_service.process(pd.DataFrame(dataset))
+        preprocessed_df = clean_data_service.process(df)
+
+        # Sample dataset
+        logger.warn(f"Sampling dataset {str(model_instance.dataset)}...")
+        if model_instance.sample_size:
+             preprocessed_df = preprocessed_df.sample(n=model_instance.sample_size, random_state=1)
+        else:
+            preprocessed_df = preprocessed_df.sample(frac=model_instance.sample_frac, random_state=1)
+        if model_instance.algorithm == "LSTM":
+            preprocessed_df = preprocessed_df.sort_index()
         
-        # logger.warn(f"Features: {features}")
-        # logger.warn(f"Target: {target}")
+        logger.warn(f"Features: {features_list}")
+        logger.warn(f"Target: {target_list}")
+
         # Set features and target
-        logger.warn(preprocessed_df.head())
-        X = pd.DataFrame(preprocessed_df[features])
-        y = pd.DataFrame(preprocessed_df[target])
+        X = pd.DataFrame(preprocessed_df[features_list])
+        y = pd.DataFrame(preprocessed_df[target_list])
 
-        # logger.warn(f"X: {X.head()}")
-        # logger.warn(f"y: {y.head()}")
+        logger.warn(f"X shape: {X.shape}")
+        logger.warn(f"y shape: {y.shape}")
 
-        logger.warn(f"Preprocessing completed for dataset {dataset_id}")
-        
-        if scaler:
-            # Scale dataset
-            scale_data_service = ScaleDataService(scaler)
+        logger.warn(f"X dtype: {X.dtypes}")
+        logger.warn(f"y dtype: {y.dtypes}")
+
+        # Scale dataset
+        logger.warn(f"Scaling dataset {str(model_instance.dataset)}...")
+        if model_instance.scaler:
+            scale_data_service = ScaleDataService(model_instance.scaler)
             X = scale_data_service.process(X)
 
-        logger.warn(f"Scaling completed for dataset {dataset_id}")
-
-        # Create and train the model
-        logger.warn(f"Training {algorithm} model on dataset {dataset_id}")
         
-        match algorithm:
-            case "MLP":
-                if hidden_layers:
-                    if not isinstance(hidden_layers, list):
-                        hidden_layers = [hidden_layers]
-                    model = MultilayerPerceptron(
-                        name=name,
-                        features=features,
-                        target=target,
-                        task=task,
-                        dataset_id=dataset_id,
-                        hidden_layers=hidden_layers
-                    )
-                else:
-                    model = MultilayerPerceptron(
-                        name=name,
-                        features=features,
-                        target=target,
-                        task=task,
-                        dataset_id=dataset_id
-                    )
-            case "LSTM":
-                model = LSTM(
-                    name=name,
-                    features=features,
-                    target=target,
-                    task=task,
-                    dataset_id=dataset_id,
-                    timesteps=timesteps if timesteps else 5
-                )
-            case _:
-                raise Exception("Invalid algorithm")                
+        X = X.values.astype(np.float32)
+        # if task is classification or binary, convert y to int
+        if model_instance.task == "Classification" or model_instance.task == "Binary":
+            y = y.values.astype(int)
+        else:
+            y = y.values.astype(np.float32)
+        
+        # Create and train the model
+        logger.warn(f"Training {model_instance.algorithm} model on dataset {str(model_instance.dataset)}")
+        model_instance.train(X, y)
 
-        # logger.warn(f"X_pd type: {type(X_pd)}")
-        # logger.warn(f"y_pd type: {type(y_pd)}")   
-
-        # logger.warn(f"X_pd: {X_pd.head()}")
-        # logger.warn(f"y_pd: {y_pd.head()}")                
-
-        model.train(X.values.astype('float32'), y.values.astype('float32'), epochs, batch_size)                      
-
-        logger.warn(f"{algorithm} model training completed for dataset {dataset_id}")   
-        # Save the model
-        logger.warn(f"Saving model instance {name}")
-        model.save()
-        model.save_model_instance(algorithm)
-        update_training_status(dataset_id, 'TRAINED')   
+        logger.warn(f"{model_instance.algorithm} model training completed for dataset {str(model_instance.dataset)}") 
         create_notification(
-            "Model Training", 
-            user_id, 
-            f"Model '{name}' trained successfully.", 
-            "SUCCESS",
-            'TRAINING'
-            )
-        return True
-    except Exception as e:
-        logger.error(str(e))        
-        try:
-            self.retry(countdown=5)
-        except MaxRetriesExceededError:
-            update_training_status(dataset_id, 'UNTRAINED')
-            create_notification(
-                "Model Training", 
-                user_id, 
-                f"Model '{name}' training failed: {str(e)}.", 
-                "ERROR",
-                'TRAINING'
-                )
-            logger.error("Max retries exceeded. Task failed.")
-        return False
+            title="Model trained successfully",
+            message=f"{model_instance.algorithm} model training completed for dataset {str(dataset_instance['name'])}",
+            context="TRAINING",
+            type="SUCCESS",
+            user=dataset_instance["user"]
+        )
     
-
-@shared_task(bind=True)
-def predict(self, model_id, data_predict):
-    try:
-        logger.warn(f"Predicting with model {model_id}")
-        model = MLModel.objects.get(id=model_id)
-        df_predict = pd.DataFrame(data_predict)[model.features.split(',')]
-
-        data_predict = pd.DataFrame(data_predict)
-        prediction = model.predict(data_predict)
-        return prediction
     except Exception as e:
+        traceback.print_exc()
         logger.error(str(e))
         try:
             self.retry(countdown=5)
         except MaxRetriesExceededError:
-            logger.error("Max retries exceeded. Task failed.")
+                create_notification(
+                    title="Model trained failed",
+                    message=f"{model_instance.algorithm} model training failed for dataset {str(dataset_instance['name'])}",
+                    context="TRAINING",
+                    type="ERROR",
+                    user=dataset_instance["user"]
+                )
+                logger.error("Max retries exceeded. Task failed.")
         return False

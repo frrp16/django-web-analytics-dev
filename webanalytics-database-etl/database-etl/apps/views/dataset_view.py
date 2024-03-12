@@ -9,6 +9,8 @@ from ..serializers import DatasetTableSerializer
 
 from ..tasks import load_data_task
 
+import traceback
+
 class DatasetTableViewSet(viewsets.ViewSet):
     
     serializer_class = DatasetTableSerializer
@@ -31,6 +33,7 @@ class DatasetTableViewSet(viewsets.ViewSet):
         try:
             if id is None  or connection is None or table_name is None:
                 return Response('Invalid request', status=status.HTTP_400_BAD_REQUEST) 
+            print(request.data)
 
             connection_instance = DatabaseConnection.objects.get(id=connection)
 
@@ -39,10 +42,11 @@ class DatasetTableViewSet(viewsets.ViewSet):
             )        
             dataset_table.save()
             load_data_task.delay(dataset_table.id)        
-            serializer = DatasetTableSerializer(dataset_table)        
+            serializer = DatasetTableSerializer(dataset_table)  
             
             return Response(serializer.data, status=status.HTTP_201_CREATED)  
         except Exception as e:  
+            traceback.print_exc()
             return Response(str(e), status=status.HTTP_400_BAD_REQUEST)      
         
     @action(detail=False, methods=['POST'], url_path='load')

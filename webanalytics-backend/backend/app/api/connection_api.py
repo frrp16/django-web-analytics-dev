@@ -8,9 +8,7 @@ from ..models import DatabaseConnection
 
 def create_connection(connection: DatabaseConnection):
     try:
-        response = requests.post(
-        f"{settings.ETL_BACKEND_URL}/connections/",
-            json={
+        data = {
                 "id": str(connection.id),
                 "database_type": connection.database_type,
                 "host": connection.host,
@@ -20,6 +18,10 @@ def create_connection(connection: DatabaseConnection):
                 "password": connection.password,
                 "ssl": connection.ssl
             }
+        print(data)
+        response = requests.post(
+        f"{settings.ETL_BACKEND_URL}/connections/",
+            json=data
         )
         # check for response status
         response.raise_for_status()

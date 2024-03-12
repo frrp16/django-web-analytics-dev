@@ -19,14 +19,15 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load environment variables
-dotenv.load_dotenv(BASE_DIR / '.env')
+dotenv.load_dotenv()
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY')
+SECRET_KEY = os.getenv('SECRET_KEY')
+BACKEND_HOST = os.getenv('BACKEND_URL')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -117,6 +118,15 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+PASSWORD_HASHERS = [
+    "django.contrib.auth.hashers.Argon2PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher",
+    "django.contrib.auth.hashers.BCryptSHA256PasswordHasher",
+    "django.contrib.auth.hashers.ScryptPasswordHasher",
+]
+
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
@@ -159,6 +169,6 @@ CELERY_RESULT_BACKEND = f"redis://{os.getenv('REDIS_HOST')}:{os.getenv('REDIS_PO
 CELERY_BEAT_SCHEDULE = {
     'periodic_load_all_data': {
         'task': 'apps.tasks.periodic_load_all_data',
-        'schedule': timedelta(hours=1)
+        'schedule': timedelta(minutes=2)
     }
 }

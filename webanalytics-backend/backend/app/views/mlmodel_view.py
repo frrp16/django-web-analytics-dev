@@ -10,6 +10,7 @@ from ..services import user_service
 from ..models import DatabaseConnection
 
 from ..api import get_model_by_dataset_id, get_model_summary
+from ..api import create_model, train_model, get_model_by_id, get_model_loss_history, update_model
 
 
 from django.conf import settings
@@ -31,8 +32,34 @@ class MLModelView(viewsets.ViewSet):
         Get model summary by model id
         """
         try:
-            response = get_model_summary(pk)
+            response = get_model_by_id(pk)
             return Response(response, status=200)
+        except Exception as e:
+            return Response(str(e), status=500)
+
+    def create(self, request):
+        """
+        Create model
+        """
+        try:
+            data = request.data 
+            # if dataset_id is not exist
+            if not data.get('dataset'):
+                return Response("Dataset id is required", status=400)
+
+            response = create_model(data)
+            return Response(response, status=200)
+        except Exception as e:
+            return Response(str(e), status=500)
+
+    def destroy(self, request, pk=None):
+        """
+        Delete model
+        """
+        try:
+            url = f"{settings.ML_BACKEND_URL}/mlmodel/{pk}/"
+            response = requests.delete(url)
+            return Response(response, status=200) 
         except Exception as e:
             return Response(str(e), status=500)
 
@@ -47,6 +74,17 @@ class MLModelView(viewsets.ViewSet):
         except Exception as e:
             return Response(str(e), status=500)
         
+    @action(detail=True, methods=['GET'], url_path='history')
+    def get_model_loss_history(self, request, pk=None):
+        """
+        Get model loss history by model id
+        """
+        try:
+            response = get_model_loss_history(pk)
+            return Response(response, status=200)
+        except Exception as e: 
+            return Response(str(e), status=500)
+        
     @action(detail=True, methods=['GET'], url_path='summary')
     def get_model_summary(self, request, pk=None):
         """
@@ -57,3 +95,32 @@ class MLModelView(viewsets.ViewSet):
             return Response(response, status=200)
         except Exception as e:
             return Response(str(e), status=500)
+    
+    @action(detail=True, methods=["PATCH"], url_path='update')
+    def update_model(self, request, pk=None):
+        """
+        Update model
+        """
+        try:
+            data = request.data
+            response = update_model(pk, data)
+            return Response(response, status=200)
+        except Exception as e:
+            return Response(str(e), status=500)
+    
+    
+
+    @action(detail=False, methods=['post'], url_path='train')
+    def train_model(self, request):
+        """
+        Train model
+        """
+        try:
+            data = request.data
+            print(data)
+            response = train_model(data)
+            return Response(response, status=200)
+        except Exception as e:
+            return Response(str(e), status=500)
+    
+    

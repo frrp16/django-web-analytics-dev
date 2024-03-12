@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect, useRef } from 'react';
+import { useState, useContext, useEffect, useRef, memo } from 'react';
 import useWebSocket, { ReadyState } from 'react-use-websocket'; 
 
 import MenuIcon from '@mui/icons-material/Menu';
@@ -15,9 +15,14 @@ import DialogModal from './Dialog';
 function Navbar({ toggleSidebar }){
     const [isSpinning, setIsSpinning] = useState(false);
     const [showDialog, setShowDialog] = useState(false);
+
+    const notificationMessage = useRef([])
     
 
-    const { currentUserInformation, logout, socketURL, socketConncted, setSocketConnected } = useContext(AuthContext);
+    const { 
+        currentUserInformation, logout, 
+        socketURL, socketConncted, setSocketConnected 
+    } = useContext(AuthContext);
     
     const {
         sendMessage,
@@ -43,7 +48,10 @@ function Navbar({ toggleSidebar }){
 
     useEffect(() => {
         if (lastMessage) {
-            console.log(lastMessage.data);
+            // console.log(lastMessage.data);
+            // setNotificationMessage((prev) => [...prev, lastMessage.data]);            
+            notificationMessage.current.push(lastMessage.data);
+            console.log(notificationMessage.current);
         }
     }
     , [lastMessage]);
@@ -59,6 +67,13 @@ function Navbar({ toggleSidebar }){
         // Clean up function
         // Only re-run the effect if socketURL changes
 
+    // useEffect(() => {
+    //     if (notificationMessage) {
+    //         setNotificationMessage(notificationMessage);
+    //         console.log(notificationMessage)
+    //     }
+    // }
+    // , [notificationMessage]);
 
     const handleClick = () => {
         setIsSpinning(true);
@@ -112,4 +127,4 @@ function Navbar({ toggleSidebar }){
     )
 }
 
-export default Navbar
+export default memo(Navbar)

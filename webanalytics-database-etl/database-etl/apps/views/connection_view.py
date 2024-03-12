@@ -34,7 +34,9 @@ class DatabaseConnectionViewSet(viewsets.ViewSet):
         database = request.data['database']
         username = request.data['username']
         password = request.data['password']
-        ssl = request.data['ssl']       
+        ssl = request.data['ssl']      
+
+        # print(request.data) 
 
         if id is None or database_type is None or host is None or port is None or database is None or username is None or password is None:
             return Response('Invalid request', status=status.HTTP_400_BAD_REQUEST)

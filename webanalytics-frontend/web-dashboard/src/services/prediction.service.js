@@ -25,7 +25,7 @@ export const addNewTrainingModel = async (newTrainingModel, accessToken) => {
 
 
 export const getTrainingModels = async (dataset_id, accessToken) => {
-    const response = await axios.get(`${BASE_API_URL}train/?dataset_id=${dataset_id}`, {
+    const response = await axios.get(`${BASE_API_URL}mlmodel/dataset/${dataset_id}`, {
         headers: {
             Authorization: `Bearer ${accessToken}`
         }
