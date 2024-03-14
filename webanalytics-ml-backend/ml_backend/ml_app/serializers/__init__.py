@@ -1,2 +1,2 @@
-from .mlmodel_serializer import MLModelSerializer
+from .mlmodel_serializer import MLModelSerializer, PredictionModelSerializer
 from .monitorlog_serializer import DatasetMonitorLogSerializer

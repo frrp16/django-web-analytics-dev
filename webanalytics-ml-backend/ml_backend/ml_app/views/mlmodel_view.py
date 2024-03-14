@@ -4,8 +4,8 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 
-from ..models import MLModel
-from ..serializers import MLModelSerializer
+from ..models import MLModel, PredictionModel
+from ..serializers import MLModelSerializer, PredictionModelSerializer
 
 from ..services.dataset_service import get_dataset_data, update_training_status, get_dataset_instance
 
@@ -15,6 +15,8 @@ import numpy as np
 import ast
 import json
 import uuid
+
+from sklearn.metrics import accuracy_score
 
 from ..tasks import train_model 
 
@@ -63,6 +65,7 @@ class MLModelViewSet(viewsets.ViewSet):
             model_instance.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Exception as e:
+            traceback.print_exc()
             return Response(str(e), status=status.HTTP_400_BAD_REQUEST) 
     
     @action(detail=False, methods=['GET'], url_path='dataset')
@@ -129,7 +132,7 @@ class MLModelViewSet(viewsets.ViewSet):
         try:
             model = MLModel.objects.get(id=pk)
             data = request.data.get('data')
-            df_pred = pd.DataFrame(json.loads(data))
+            df_pred = pd.DataFrame(data if type(data) == list else json.loads(data))
             # filter only features from models features
             features_list = ast.literal_eval(model.features)
             target_list = ast.literal_eval(model.target)
@@ -157,58 +160,63 @@ class MLModelViewSet(viewsets.ViewSet):
                     df_pred[col] = df_pred[col].astype(int)
 
             df_pred = df_pred.values.astype(np.float32)
-            print(df_pred.shape)
-            print(type(df_pred_target)) 
+            # print(df_pred.shape)
+            # print(type(df_pred_target)) 
             # if algorithm is LSTM, reshape data
             if model.algorithm == 'LSTM':
                 df_pred, _ = model.lstm_data_transform(df_pred, df_pred)
-                print(df_pred.shape)
+                # print(df_pred.shape)
  
             # make prediction
             prediction = model.predict(df_pred)
             mse = None
             # if model is anomaly detection, calculate mse
             if model.task == 'Anomaly Detection':
-                mse = np.mean(np.square(df_pred.values - prediction))
+                mse = np.mean(np.square(df_pred - prediction))
             
             # if df_pred_target is not None, add it to the response
-            if df_pred_target is not None and model.algorithm != "RANDOM_FOREST":
-                mse = np.mean(np.square(df_pred_target.values - prediction))
+            if df_pred_target is not None and model.task != 'Anomaly Detection' and model.algorithm != "RANDOM_FOREST":
+                if model.task == 'Regression':
+                    mse = np.mean(np.square(df_pred_target.values - prediction))
+                else:
+                    df_pred_target = df_pred_target.astype('category')
+                    mse = accuracy_score(df_pred_target.cat.codes, prediction)
+                    
 
-            response = {
-                'prediction': prediction,
-                'mse': mse if mse is not None else None
-            }
+            prediction = PredictionModel(
+                model=model,
+                data=json.dumps(data),
+                loss=mse,
+                prediction=json.dumps(prediction.tolist())
+            )
+            prediction.save()
+            prediction_serializer = PredictionModelSerializer(prediction)
+            
 
-            return Response(response, status=status.HTTP_200_OK)
+            return Response(prediction_serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
             traceback.print_exc()
             return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
         
-        
-    # @action(detail=True, methods=['GET'], url_path='layers')
-    # def get_model_layers(self, request, pk=None):
-    #     try:
-    #         model = MLModel.objects.get(id=pk)
-    #         layers = model.get_model_layers()
-    #         return Response(layers, status=status.HTTP_200_OK)
-    #     except Exception as e:
-    #         return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
-        
-    # @action(detail=True, methods=['POST'], url_path='predict')
-    # def predict(self, request):  
-    #     dataset_id = request.data.get('dataset_id')
-    #     model_id = request.data.get('model_id')
-    #     data_predict = request.data.get('data')
 
-    #     try:
-    #         model = MLModel.objects.get(id=model_id)
-    #         df_predict = pd.DataFrame(data_predict)[model.features.split(',')]
+class PredictionModelViewSet(viewsets.ViewSet):
+    serializer_class = PredictionModelSerializer
+    def list(self, request):
+        queryset = PredictionModel.objects.all()
+        serializer = PredictionModelSerializer(queryset, many=True)
+        return Response(serializer.data)
 
-    #         data_predict = pd.DataFrame(data_predict)
-    #         prediction = model.predict(data_predict)
-    #         return Response(prediction, status=status.HTTP_200_OK)
-    #     except Exception as e:
-    #         return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
+    def retrieve(self, request, pk=None):
+        queryset = PredictionModel.objects.get(id=pk)
+        serializer = PredictionModelSerializer(queryset)
+        return Response(serializer.data)
+
+    def destroy(self, request, pk=None):
+        try:
+            prediction_instance = PredictionModel.objects.get(id=pk)
+            prediction_instance.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
 
         

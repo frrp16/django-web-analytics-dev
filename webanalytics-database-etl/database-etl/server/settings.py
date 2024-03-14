@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+from celery.schedules import crontab
 from datetime import timedelta
 import dotenv
 import os
@@ -169,6 +170,6 @@ CELERY_RESULT_BACKEND = f"redis://{os.getenv('REDIS_HOST')}:{os.getenv('REDIS_PO
 CELERY_BEAT_SCHEDULE = {
     'periodic_load_all_data': {
         'task': 'apps.tasks.periodic_load_all_data',
-        'schedule': timedelta(minutes=2)
+        'schedule': crontab(minute=0, hour=0)
     }
 }

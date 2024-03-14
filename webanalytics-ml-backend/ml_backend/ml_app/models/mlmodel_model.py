@@ -62,7 +62,7 @@ class MLModel(models.Model):
     last_trained = models.DateTimeField(null=True)
     training_time = models.FloatField(null=True)
     model_file = models.BinaryField(null=True)   
-    scaler_file = models.BinaryField(null=True)  
+    scaler_file = models.BinaryField(null=True) 
 
     def __str__(self):
         return self.name   
@@ -116,12 +116,13 @@ class MLModel(models.Model):
             case "CNN":
                 model = keras.models.Sequential(name=self.name)
                 if hidden_layers:
-                    model.add(keras.layers.Conv2D(hidden_layers[0], (3,3), input_shape=(self.input_shape), activation=self.activation))
-                    model.add(keras.layers.MaxPooling2D((2,2)))
-                    model.add(keras.layers.Conv2D(hidden_layers[1], (3,3), activation=self.activation))
-                    model.add(keras.layers.MaxPooling2D((2,2)))
+                    model.add(keras.layers.Input(shape=(self.input_shape, )))
+                    model.add(keras.layers.RepeatVector(self.timesteps))
+                    model.add(keras.layers.Conv1D(hidden_layers[0], 2, activation=self.activation))
+                    model.add(keras.layers.MaxPooling1D())
                     model.add(keras.layers.Flatten())
-                    model.add(keras.layers.Dense(self.output_shape, activation=self.activation_output))
+                    model.add(keras.layers.Dense(hidden_layers[1], activation=self.activation))
+                    model.add(keras.layers.Dense(self.output_shape, activation=self.activation_output))                    
                 model.compile(loss=self.loss, optimizer=self.optimizer, metrics=self.metrics)
                 return model
             case "RANDOM_FOREST":
@@ -266,3 +267,20 @@ class MLModel(models.Model):
         x_array = np.array(X)
         y_array = np.array(y)
         return x_array, y_array
+
+class PredictionModel(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    model = models.ForeignKey(MLModel, on_delete=models.CASCADE)
+    data = models.TextField()
+    prediction = models.TextField()
+    loss = models.TextField(null=True)
+    created_at = models.DateTimeField(auto_now_add=True) 
+
+    def get_prediction_by_model_id(self, model_id):
+        try:
+            return self.objects.filter(model=model_id)
+        except Exception as e:
+            raise Exception(e)
+
+    def __str__(self):
+        return self.model.name

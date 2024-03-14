@@ -58,3 +58,11 @@ def train_model(data):
         return response.json()
     except Exception as e:
         raise Exception(e)
+
+def delete_prediction_history(prediction_id):
+    try:
+        url = f"{settings.ML_BACKEND_URL}/prediction/{prediction_id}/"
+        response = requests.delete(url)
+        return response.json()
+    except Exception as e:
+        raise Exception(e)

@@ -122,5 +122,33 @@ class MLModelView(viewsets.ViewSet):
             return Response(response, status=200)
         except Exception as e:
             return Response(str(e), status=500)
+        
+    @action(detail=True, methods=['POST'], url_path='predict')
+    def predict(self, request, pk=None):
+        """
+        Predict
+        """
+        try:
+            data = request.data
+            response = requests.post(
+                f"{settings.ML_BACKEND_URL}/mlmodel/{pk}/predict/",
+                json=data
+            )
+            response.raise_for_status()
+            return Response(response.json(), status=200)
+        except Exception as e:
+            return Response(str(e), status=500)
+
+    @action(detail=True, methods=['DELETE'], url_path='prediction/(?P<prediction_id>[^/.]+)/delete')
+    def delete_prediction_history(self, request, pk=None, prediction_id=None):
+        """
+        Delete prediction history
+        """
+        try:
+            url = f"{settings.ML_BACKEND_URL}/prediction/{prediction_id}/"
+            response = requests.delete(url)
+            return Response(response, status=200)
+        except Exception as e:
+            return Response(str(e), status=500)
     
     

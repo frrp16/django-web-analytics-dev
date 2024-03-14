@@ -9,4 +9,5 @@ class DatasetMonitorLog(models.Model):
     dataset_table = models.ForeignKey(DatasetTable, on_delete=models.CASCADE)
     date_updated = models.DateTimeField(auto_now=True)
     row_count = models.IntegerField()
-    column_count = models.IntegerField()    
+    column_count = models.IntegerField()  
+    changes = models.JSONField(null=True)  

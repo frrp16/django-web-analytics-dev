@@ -43,3 +43,12 @@ class DatasetTable(models.Model):
             etl_conn.close()              
         except Exception as e:
             raise Exception(e)
+    
+    def get_data_from_warehouse(self):
+        try:
+            etl_conn = database_etl_engine.connect()
+            result = pd.read_sql_table(f"{self.connection.database}_{self.table_name}", etl_conn)
+            etl_conn.close()
+            return result
+        except Exception as e:
+            raise Exception(e)

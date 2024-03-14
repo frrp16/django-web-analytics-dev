@@ -1,2 +1,2 @@
-from .mlmodel_view import MLModelViewSet
+from .mlmodel_view import MLModelViewSet, PredictionModelViewSet
 from .monitorlog_view import MonitorLogViewSet
