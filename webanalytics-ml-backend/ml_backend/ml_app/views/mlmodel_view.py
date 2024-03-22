@@ -76,6 +76,7 @@ class MLModelViewSet(viewsets.ViewSet):
             serializer = MLModelSerializer(queryset, many=True)
             return Response(serializer.data)
         except Exception as e:
+            traceback.print_exc()
             return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
         
     

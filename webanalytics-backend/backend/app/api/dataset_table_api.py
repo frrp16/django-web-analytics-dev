@@ -13,12 +13,10 @@ def create_dataset_table(dataset: Dataset):
                 "table_name": dataset.table_name,
             }   
         )
-        # check for response status
         response.raise_for_status()
         return response.json()    
             
     except Exception as e:        
-        # traceback.print_last()
         raise Exception(e)
 
 def refresh_dataset_table(dataset_id):

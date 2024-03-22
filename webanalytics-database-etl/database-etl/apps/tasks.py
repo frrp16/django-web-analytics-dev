@@ -10,20 +10,20 @@ from .models import DatasetTable, DatasetMonitorLog
 from .api import create_notification, get_dataset_instance
 
 @shared_task(bind=True, max_retries=5)
-def load_data_task(self, dataset_table_id):
+def load_data_task(self, dataset_table_id, new_table=False):
     logger = get_task_logger(__name__)
     try:        
         dataset_table = DatasetTable.objects.get(pk=dataset_table_id)
         dataset_instance = get_dataset_instance(dataset_table_id)
-        # Get data 
-        old_dataset_data = dataset_table.get_data_from_warehouse()
+        # Get data
+        old_dataset_data = dataset_table.get_data_from_warehouse() if new_table == False else None
         dataset_data = dataset_table.extract_data()
         # Load data
         dataset_table.load_data(dataset_data)
         row_count = len(dataset_data)
         column_count = len(dataset_data.columns.to_list())
-        # Check for changes
-        changes = find_data_changes(old_dataset_data, dataset_data)
+        # Check for changes        
+        changes = find_data_changes(old_dataset_data, dataset_data) if new_table == False else {}
         # Update time updated
         dataset_table.date_updated = timezone.now()
         dataset_table.save()
@@ -39,7 +39,7 @@ def load_data_task(self, dataset_table_id):
             type="SUCCESS",
             user=dataset_instance["user"]
         )
-        if len(changes['added_rows'])  or changes['modified_rows'] or changes['deleted_rows']:	
+        if not new_table and (changes['added_rows']  or changes['modified_rows'] or changes['deleted_rows']):	
             create_notification(
                 title="Dataset Changes Detected",
                 message=f"Dataset {dataset_table.table_name} has changes with {len(changes['added_rows'])} added rows, {len(changes['modified_rows'])} modified rows and {len(changes['deleted_rows'])} deleted rows.",
@@ -69,8 +69,9 @@ def periodic_load_all_data(self):
     try:
         dataset_tables = DatasetTable.objects.all()
         for dataset_table in dataset_tables:
-            logger.warn(f"Load datase {dataset_table.table_name} from database {dataset_table.connection.database}.")
-            load_data_task.delay(dataset_table.id)                
+            if dataset_table.date_updated < timezone.now() - timezone.timedelta(days=1):
+                logger.warn(f"Load datase {dataset_table.table_name} from database {dataset_table.connection.database}.")
+                load_data_task.delay(dataset_table.id)                 
         return True
     except Exception as e:
         logger.error(f"An error occurred: {str(e)}")

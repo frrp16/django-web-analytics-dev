@@ -170,6 +170,6 @@ CELERY_RESULT_BACKEND = f"redis://{os.getenv('REDIS_HOST')}:{os.getenv('REDIS_PO
 CELERY_BEAT_SCHEDULE = {
     'periodic_load_all_data': {
         'task': 'apps.tasks.periodic_load_all_data',
-        'schedule': crontab(minute=0, hour=0)
+        'schedule': timedelta(minutes=10)
     }
 }

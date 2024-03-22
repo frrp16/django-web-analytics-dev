@@ -139,12 +139,13 @@ class MLModelView(viewsets.ViewSet):
         except Exception as e:
             return Response(str(e), status=500)
 
-    @action(detail=True, methods=['DELETE'], url_path='prediction/(?P<prediction_id>[^/.]+)/delete')
-    def delete_prediction_history(self, request, pk=None, prediction_id=None):
+    @action(detail=True, methods=['DELETE'], url_path='prediction')
+    def delete_prediction_history(self, request, pk=None):
         """
         Delete prediction history
         """
         try:
+            prediction_id = request.data.get("prediction_id")
             url = f"{settings.ML_BACKEND_URL}/prediction/{prediction_id}/"
             response = requests.delete(url)
             return Response(response, status=200)

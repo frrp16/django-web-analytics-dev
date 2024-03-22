@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 
 from django.utils import timezone
+import traceback
 
 from ..models import DatabaseConnection
 from ..serializers import DatabaseConnectionSerializer
@@ -53,4 +54,5 @@ class DatabaseConnectionViewSet(viewsets.ViewSet):
             serializer = DatabaseConnectionSerializer(db_instance)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except Exception as e:
+            traceback.print_exc()
             return Response(str(e), status=400)

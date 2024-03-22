@@ -9,7 +9,6 @@ from .views import TrainingView
 # from .views import MLModelViewSet
 from .views import DatabaseConnectionViewSet
 from .views import NotificationViewSet
-from .views import PlotViewSet
 from .views import MLModelView
 
 router = DefaultRouter()
@@ -18,7 +17,7 @@ router.register(r'connection', DatabaseConnectionViewSet, basename='DatabaseConn
 router.register(r'dataset', DatasetViewSet, basename='Dataset')
 router.register(r'notification', NotificationViewSet, basename='Notification')
 router.register(r'mlmodel', MLModelView, basename='MLModel')
-router.register(r'plot', PlotViewSet, basename='Plot')
+# router.register(r'plot', PlotViewSet, basename='Plot')
 
 app_urls = [
     path('register/', RegisterView.as_view(), name='register'),

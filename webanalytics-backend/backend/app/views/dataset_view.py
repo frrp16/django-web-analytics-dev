@@ -59,20 +59,12 @@ class DatasetViewSet(viewsets.ViewSet):
         if request.user.is_staff:
             queryset = Dataset.objects.get(id=pk)            
             serializer = DatasetSerializer(queryset)
-            # get dataset monitor log
-            # monitor_log = get_dataset_monitorlog(serializer.data["id"])   
-            # print('Monitor Log:', monitor_log)     
-            # serializer.data["monitor_log"] = monitor_log    
-            # print('Serializer:', serializer)
             return Response(serializer.data) 
         
         user = user_service.get_user_from_token(request.headers.get('Authorization').split()[1])  
         queryset = Dataset.objects.filter(user=user.id)
         dataset = queryset.get(id=pk)
         serializer = DatasetSerializer(dataset)
-        # # get dataset monitor log
-        # monitor_log = get_dataset_monitorlog(serializer.data["id"])          
-        # serializer.data['monitor_log'] = monitor_log
         return Response(serializer.data)
     
     # # Create partial update method
@@ -113,19 +105,8 @@ class DatasetViewSet(viewsets.ViewSet):
         except Exception as e:
             return Response(str(e), status=400)
         
-        # Get DatabaseConnection from user_id
         db_connection = DatabaseConnection.objects.get(user=user_id)
-
-        # Get data from database
         try:
-            # # Build connection engine
-            # engine = db_connection.engine_instance
-            # # Read using pandas
-            # df = pd.read_sql_table(table_name, con=engine)   
-            # # Get column count and row count
-            # column_count = len(df.columns)
-            # row_count = len(df.index)
-            
             # # Create a new Dataset instance       
             dataset_instance = Dataset(
                 name=name, description=description, table_name=table_name, 
@@ -136,13 +117,6 @@ class DatasetViewSet(viewsets.ViewSet):
 
             # Create a new DatasetMonitorLog instance            
             dataset_instance.save()  
-            # create_monitorlog(str(dataset_instance.id), row_count, column_count)            
-            # monitor_log = get_dataset_monitorlog(str(dataset_instance.id))            
-            # Serialize the Dataset instance            
-            # Add monitor log to serializer data
-            # serializer.data['monitor_log'] = monitor_log
-            # engine.dispose()
-            # get dataset monitor lo
             return Response(f"Dataset {dataset_instance.name} created", status=status.HTTP_201_CREATED)
         except Exception as e:
             print('Error:', e)

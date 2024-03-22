@@ -18,12 +18,20 @@ class MLModelSerializer(serializers.ModelSerializer):
     def get_features(self, obj): 
         if obj.features is None:
             return None
+        # check if obj.features has "" quotes
+        if obj.features.find("\"") != -1:
+            return json.loads(obj.features)
         return json.loads(obj.features.replace("'", "\""))
     
     def get_target(self, obj):
         if obj.target is None:
             return None
-        return json.loads(obj.target.replace("'", "\""))
+        # check if obj.target has "" quotes
+        if obj.target.find("\"") != -1:
+            return json.loads(obj.target)
+        return json.loads(obj.target.replace("'", "\"")) 
+    
+
     
     def get_history(self, obj):
         if obj.history is None:
@@ -40,4 +48,5 @@ class MLModelSerializer(serializers.ModelSerializer):
                   'hidden_layers', 'features', 'target', 
                   'epochs', 'batch_size', 'timesteps', 'default_model', 'activation', 
                   'optimizer', 'num_trees', 'max_depth', 'last_trained','training_time', 'history', 'prediction']
+
 

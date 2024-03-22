@@ -2,7 +2,7 @@ version: '3.1'
 
 services:
   ml_backend:
-    build: webanalytics-ml-backend/
+    build: .
     container_name: django-webanalytics-ml_backend
     volumes:
       - .:/app

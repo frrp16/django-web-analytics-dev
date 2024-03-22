@@ -41,7 +41,7 @@ class DatasetTableViewSet(viewsets.ViewSet):
                 id=id, connection=connection_instance, table_name=table_name
             )        
             dataset_table.save()
-            load_data_task.delay(dataset_table.id)        
+            load_data_task.delay(dataset_table.id, new_table=True)        
             serializer = DatasetTableSerializer(dataset_table)  
             
             return Response(serializer.data, status=status.HTTP_201_CREATED)  

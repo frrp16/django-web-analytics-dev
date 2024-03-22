@@ -26,13 +26,36 @@ database_etl_url = URL.create(
 database_etl_engine = create_engine(database_etl_url)
 
 class Dataset(models.Model):
+    """
+    Represents a dataset in the application.
+
+    Attributes:
+        id (UUIDField): The unique identifier of the dataset.
+        name (CharField): The name of the dataset.
+        description (TextField): The description of the dataset.
+        table_name (CharField): The name of the table associated with the dataset.
+        created_at (DateTimeField): The timestamp when the dataset was created.
+        status (CharField): The status of the dataset (CHANGED or STABLE).
+        is_trained (CharField): The training status of the dataset (TRAINING, TRAINED, or UNTRAINED).
+        user (ForeignKey): The user who owns the dataset.
+        connection (ForeignKey): The database connection associated with the dataset.
+
+    Methods:
+        get_dataset_data(): Retrieves the dataset data from the database.
+        get_dataset_columns_type(use_cache=False): Retrieves the column names and types of the dataset.
+        get_dataset_row_count(use_cache=False): Retrieves the row count of the dataset.
+        get_dataset_plot_type(): Retrieves the plot types that can be generated for the dataset.
+    """
+
     class DatasetStatus(models.TextChoices):
         CHANGED = 'CHANGED'
         STABLE = 'STABLE'
+
     class DatasetTrainingStatus(models.TextChoices):
         TRAINING = 'TRAINING'
         TRAINED = 'TRAINED'
         UNTRAINED = 'UNTRAINED'
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     description = models.TextField(null=True)
@@ -44,6 +67,15 @@ class Dataset(models.Model):
     connection = models.ForeignKey(DatabaseConnection, on_delete=models.CASCADE, null=True)
 
     def get_dataset_data(self):
+        """
+        Retrieves the dataset data from the database.
+
+        Returns:
+            DataFrame: The dataset data as a pandas DataFrame.
+
+        Raises:
+            Exception: If an error occurs while retrieving the dataset data.
+        """
         try:
             df = cache.get(f'dataset_{self.id}_data')
             if df is not None:
@@ -60,33 +92,26 @@ class Dataset(models.Model):
                     return False
         except Exception as e:
             raise Exception(e)
-    
-    # def get_dataset_columns(self, use_cache=False):
-    #     try:            
-    #         if use_cache:                
-    #             columns = cache.get(f'dataset_{self.id}_columns')
-    #             if columns is not None:
-    #                 return columns   
-    #         conn = database_etl_engine.connect()
-    #         query = text(
-    #             "SELECT column_name as column FROM information_schema.columns WHERE table_name = :x"
-    #             ).bindparams(x=f"{self.connection.database}_{self.table_name}")  
-    #         cursor = conn.execute(query)
-    #         conn.close()  
-    #         self.connection.disconnect()     
-    #         columns = [item['column'] for item in cursor.mappings().all()]
-    #         cache.set(f'dataset_{self.id}_columns', columns)  
-    #         return columns
-    #     except Exception as e:
-    #         raise Exception(e)
-        
+
     def get_dataset_columns_type(self, use_cache=False):
+        """
+        Retrieves the column names and types of the dataset.
+
+        Args:
+            use_cache (bool, optional): Whether to use the cached column names and types. Defaults to False.
+
+        Returns:
+            list: A list of dictionaries containing the column names and types.
+
+        Raises:
+            Exception: If an error occurs while retrieving the column names and types.
+        """
         try:
             if use_cache:
                 columns_type = cache.get(f'dataset_{self.id}_columns_type')
                 if columns_type is not None:
                     return columns_type
-            
+
             df = self.get_dataset_data()
             if df is False:
                 return False
@@ -95,9 +120,21 @@ class Dataset(models.Model):
             cache.set(f'dataset_{self.id}_columns_type', columns_type)             
             return columns_type
         except Exception as e:
-            raise Exception(e) 
-        
+            raise Exception(e)
+
     def get_dataset_row_count(self, use_cache=False):
+        """
+        Retrieves the row count of the dataset.
+
+        Args:
+            use_cache (bool, optional): Whether to use the cached row count. Defaults to False.
+
+        Returns:
+            int: The row count of the dataset.
+
+        Raises:
+            Exception: If an error occurs while retrieving the row count.
+        """
         try:
             if (use_cache):
                 row_count = cache.get(f'dataset_{self.id}_row_count')
@@ -114,8 +151,17 @@ class Dataset(models.Model):
             return row_count
         except Exception as e:
             raise Exception(e)
-        
+
     def get_dataset_plot_type(self):
+        """
+        Retrieves the plot types that can be generated for the dataset.
+
+        Returns:
+            list: A list of plot types.
+
+        Raises:
+            Exception: If an error occurs while retrieving the plot types.
+        """
         plot_type = []
         try:
             df = self.get_dataset_data()
