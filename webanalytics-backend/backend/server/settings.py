@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'app.apps.AppConfig',
     'celery',
     'channels',
+    # 'drf_yasg',
     'corsheaders',    
     'django.contrib.admin',
     'django.contrib.auth',

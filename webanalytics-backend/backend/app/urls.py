@@ -11,19 +11,29 @@ from .views import DatabaseConnectionViewSet
 from .views import NotificationViewSet
 from .views import MLModelView
 
+# from drf_yasg.views import get_schema_view
+# from drf_yasg import openapi
+# from rest_framework import permissions
+
+# schema_view = get_schema_view(
+#     openapi.Info(
+#         title="REST APIs",
+#         default_version='v1'
+#     ),
+#     public=True,
+#     permission_classes=(permissions.AllowAny,),
+# )
+
 router = DefaultRouter()
 router.register(r'users', UserView, basename='User')
 router.register(r'connection', DatabaseConnectionViewSet, basename='DatabaseConnection')
 router.register(r'dataset', DatasetViewSet, basename='Dataset')
 router.register(r'notification', NotificationViewSet, basename='Notification')
 router.register(r'mlmodel', MLModelView, basename='MLModel')
-# router.register(r'plot', PlotViewSet, basename='Plot')
 
 app_urls = [
     path('register/', RegisterView.as_view(), name='register'),
     path('login/', LoginView.as_view(), name='login'),   
-    path('logout/', LogoutView.as_view(), name='logout'),  
-    path('train/', TrainingView.as_view(), name='train'),    
-    # path('mlmodel/', MLModelView.as_view(), name='mlmodel'),
+    path('logout/', LogoutView.as_view(), name='logout'),
     path('', include(router.urls)),    
 ]

@@ -19,6 +19,40 @@ import tensorflow_decision_forests as tfdf
 import uuid
 
 class MLModel(models.Model):
+    """
+    Represents a machine learning model in the application.
+
+    Attributes:
+        id (UUIDField): The unique identifier of the model.
+        dataset (CharField): The dataset used for training the model.
+        name (CharField): The name of the model.
+        status (CharField): The status of the model (untrained, trained, training).
+        algorithm (CharField): The algorithm used for the model (MLP, LSTM, CNN, RANDOM_FOREST).
+        file_extension (CharField): The file extension of the saved model file.
+        input_shape (IntegerField): The input shape of the model.
+        output_shape (IntegerField): The output shape of the model.
+        hidden_layers (TextField): The hidden layers of the model.
+        features (TextField): The features used for training the model.
+        target (TextField): The target variable of the model.
+        task (CharField): The task of the model (Regression, Classification, Binary, Anomaly Detection).
+        epochs (IntegerField): The number of epochs for training the model.
+        batch_size (IntegerField): The batch size for training the model.
+        timesteps (IntegerField): The number of timesteps for LSTM models.
+        default_model (BooleanField): Indicates if the model is the default model.
+        activation (CharField): The activation function used in the hidden layers.
+        optimizer (CharField): The optimizer used for training the model.
+        num_trees (IntegerField): The number of trees for random forest models.
+        max_depth (IntegerField): The maximum depth of the trees for random forest models.
+        scaler (CharField): The scaler used for preprocessing the data.
+        sample_size (IntegerField): The sample size used for training the model.
+        sample_frac (FloatField): The fraction of the dataset used for training the model.
+        created_at (DateTimeField): The timestamp when the model was created.
+        history (TextField): The training history of the model.
+        last_trained (DateTimeField): The timestamp when the model was last trained.
+        training_time (FloatField): The training time of the model.
+        model_file (BinaryField): The binary representation of the saved model file.
+        scaler_file (BinaryField): The binary representation of the saved scaler file.
+    """
     class Task(models.TextChoices):
         REGRESSION = 'Regression'
         CLASSIFICATION = 'Classification'
@@ -99,7 +133,8 @@ class MLModel(models.Model):
             case "MLP":
                 model = keras.models.Sequential(name=self.name)
                 if hidden_layers:
-                    model.add(keras.layers.Dense(hidden_layers[0], input_dim=self.input_shape, activation=self.activation))
+                    model.add(keras.layers.Dense(hidden_layers[0], input_dim=self.input_shape, 
+                                                 activation=self.activation))
                     for units in hidden_layers[1:]:
                         model.add(keras.layers.Dense(units, activation=self.activation))   
                     model.add(keras.layers.Dense(self.output_shape, activation=self.activation_output))
@@ -108,7 +143,8 @@ class MLModel(models.Model):
             case "LSTM":
                 model = keras.models.Sequential(name=self.name)
                 if hidden_layers:
-                    model.add(keras.layers.LSTM(hidden_layers[0], input_shape=(self.timesteps, self.input_shape), activation=self.activation, return_sequences=True))
+                    model.add(keras.layers.LSTM(hidden_layers[0], input_shape=(self.timesteps, self.input_shape), 
+                                                activation=self.activation, return_sequences=True))
                     model.add(keras.layers.LSTM(hidden_layers[1], activation=self.activation))
                     model.add(keras.layers.Dense(self.output_shape, activation=self.activation_output))
                 model.compile(loss=self.loss, optimizer=self.optimizer, metrics=self.metrics)
@@ -126,9 +162,14 @@ class MLModel(models.Model):
                 model.compile(loss=self.loss, optimizer=self.optimizer, metrics=self.metrics)
                 return model
             case "RANDOM_FOREST":
-                model = tfdf.keras.RandomForestModel()
+                model = tfdf.keras.RandomForestModel(
+                    task=tfdf.keras.Task.REGRESSION if self.task == 'Regression' else tfdf.keras.Task.CLASSIFICATION
+                    ) 
                 if self.num_trees and self.max_depth:
-                    model = tfdf.keras.RandomForestModel(num_trees=self.num_trees, max_depth=self.max_depth)
+                    model = tfdf.keras.RandomForestModel(
+                        task=tfdf.keras.Task.REGRESSION if self.task == 'Regression' else tfdf.keras.Task.CLASSIFICATION, 
+                        num_trees=self.num_trees, max_depth=self.max_depth
+                    )
                 model.compile(metrics=self.metrics)                
                 return model
             case _:
@@ -269,6 +310,18 @@ class MLModel(models.Model):
         return x_array, y_array
 
 class PredictionModel(models.Model):
+    """
+    Represents a prediction model in the ML App.
+
+    Attributes:
+        id (UUIDField): The unique identifier for the prediction model.
+        model (ForeignKey): The foreign key to the MLModel associated with this prediction model.
+        data (TextField): The data used for prediction.
+        prediction (TextField): The predicted output.
+        loss (TextField, optional): The loss value (if applicable).
+        created_at (DateTimeField): The timestamp when the prediction model was created.
+    """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     model = models.ForeignKey(MLModel, on_delete=models.CASCADE)
     data = models.TextField()
@@ -277,6 +330,18 @@ class PredictionModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True) 
 
     def get_prediction_by_model_id(self, model_id):
+        """
+        Retrieves predictions for a given model ID.
+
+        Args:
+            model_id (int): The ID of the model.
+
+        Returns:
+            QuerySet: A queryset containing the predictions associated with the given model ID.
+
+        Raises:
+            Exception: If an error occurs while retrieving the predictions.
+        """
         try:
             return self.objects.filter(model=model_id)
         except Exception as e:

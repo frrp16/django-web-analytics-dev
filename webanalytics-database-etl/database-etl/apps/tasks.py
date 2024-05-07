@@ -31,7 +31,7 @@ def load_data_task(self, dataset_table_id, new_table=False):
         dataset_monitor_log = DatasetMonitorLog(
             dataset_table=dataset_table, row_count=row_count, column_count=column_count, changes=changes
         )
-        dataset_monitor_log.save()        
+        dataset_monitor_log.save()       
         create_notification(
             title="Dataset Load Success",
             message=f"Dataset {dataset_table.table_name} loaded successfully. {row_count} rows and {column_count} columns loaded.",
@@ -87,21 +87,17 @@ def find_data_changes(existing_data: pd.DataFrame, new_data: pd.DataFrame):
     Compare existing data with new data to detect changes.
     """
     changes = {}
-    
     # Check for added rows
-    added_rows = new_data[~new_data.index.isin(existing_data.index)]
-    # if not added_rows.empty:
+    added_rows = new_data[~new_data.index.isin(existing_data.index)]    
     changes['added_rows'] = added_rows.reset_index(drop=True)
-        
+    
     # Check for modified rows
     modified_rows = new_data.merge(existing_data, indicator=True, how='outer')
     modified_rows = modified_rows[modified_rows['_merge'] == 'left_only'].drop(columns=['_merge'])
-    # if not modified_rows.empty:
     changes['modified_rows'] = modified_rows.reset_index(drop=True)
         
     # Check for deleted rows
     deleted_rows = existing_data[~existing_data.index.isin(new_data.index)]
-    # if not deleted_rows.empty:
     changes['deleted_rows'] = deleted_rows.reset_index(drop=True)
 
     # changes all timestamp data in added_rows, modified_rows and deleted_rows to string
@@ -115,7 +111,6 @@ def find_data_changes(existing_data: pd.DataFrame, new_data: pd.DataFrame):
     for col in df_temp.columns:
         changes['deleted_rows'][col] = changes['deleted_rows'][col].dt.strftime('%Y-%m-%d %H:%M:%S')
     
-
     changes['added_rows'] = changes['added_rows'].to_dict(orient='records')
     changes['modified_rows'] = changes['modified_rows'].to_dict(orient='records')
     changes['deleted_rows'] = changes['deleted_rows'].to_dict(orient='records')

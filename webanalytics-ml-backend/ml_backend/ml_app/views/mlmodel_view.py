@@ -84,8 +84,6 @@ class MLModelViewSet(viewsets.ViewSet):
     def train_model(self, request):
         try:
             model = MLModel.objects.get(id=str(request.data.get('model')))
-            # print(request.data)
-            # map request.data.get('features') from [{'column': col, 'type': type}] to [col1, col2, col3]
             features = list(map(lambda x: x['column'], request.data.get('features')))
             target = list(map(lambda x: x['column'], request.data.get('target')))
             sample_size = request.data.get('sample_size')
@@ -99,8 +97,6 @@ class MLModelViewSet(viewsets.ViewSet):
             model.scaler = scaler
 
             model.save()
-            # print(model.features)
-            # print(model.target)
             # start training model
             train_model.delay(model.id)            
             

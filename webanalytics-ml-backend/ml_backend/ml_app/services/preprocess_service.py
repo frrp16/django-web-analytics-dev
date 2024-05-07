@@ -13,20 +13,16 @@ class CleanDataService:
             df = dataset.dropna(axis=1, how='all')
             # drop rows with all missing values
             df = df.dropna(axis=0, how='all')            
-
             # fill missing values
-            df = df.fillna(df.mode().iloc[0])
-
+            df = df.fillna(df.mean().iloc[0])
             # encode object columns
             for col in df.columns:
                 if df[col].dtype == 'object':
                     df[col] = df[col].astype('category').cat.codes
-
             # encode boolean columns
             for col in df.columns:
                 if is_bool_dtype(df[col]):
                     df[col] = df[col].astype(int)
-
             # Handling outlier using Isolation Forest
             # define outlier detection model
             model = IsolationForest(contamination=0.1)
@@ -37,7 +33,6 @@ class CleanDataService:
             # select all rows that are not outliers
             mask = yhat != -1
             df = df[mask]
-
             return df
 
             

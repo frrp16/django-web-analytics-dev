@@ -9,7 +9,7 @@ from sqlalchemy import create_engine, URL
 from .connection_model import DatabaseConnection
 
 dotenv.load_dotenv()
-# connection to database_etl
+
 database_etl_url = URL.create(
     drivername='postgresql',
     username=os.getenv('DATABASE_USER'),
